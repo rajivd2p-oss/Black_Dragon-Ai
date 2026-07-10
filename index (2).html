@@ -1,0 +1,4131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Black Dragon AI</title>
+  <script src="black-dragon.config.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #35f6a3;
+      --primary-2: #ffd166;
+      --accent: #8f7cff;
+      --danger: #ff4f64;
+      --warn: #ffd166;
+      --bg: #07090c;
+      --panel: #10151a;
+      --panel-2: #182029;
+      --ink: #eef7f2;
+      --muted: #9aabb0;
+      --line: #24343b;
+      --shadow: 0 18px 40px rgba(0, 0, 0, .38);
+    }
+    body {
+      min-height: 100vh;
+      overflow: hidden;
+      display: flex;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 18% 10%, rgba(53, 246, 163, .15), transparent 24rem),
+        radial-gradient(circle at 92% 70%, rgba(143, 124, 255, .12), transparent 28rem),
+        radial-gradient(circle at 52% 100%, rgba(255, 207, 90, .08), transparent 22rem),
+        var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .sidebar {
+      width: 280px;
+      min-width: 280px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: rgba(6, 10, 12, .92);
+      border-right: 1px solid rgba(53, 246, 163, .38);
+      transition: transform .25s ease;
+      z-index: 30;
+    }
+    .sidebar.hidden { transform: translateX(-100%); position: absolute; left: 0; top: 0; }
+    .side-head, .topbar, .composer { border-color: rgba(53, 246, 163, .34); }
+    .side-head {
+      padding: 14px;
+      border-bottom: 1px solid;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .brand, .side-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--primary);
+      font-weight: 800;
+      letter-spacing: .02em;
+    }
+    .round, .pill, .chip, .tab, .icon-btn, .game-btn {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--ink);
+    }
+    .round, .icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      flex: none;
+    }
+    .top-actions .round, .composer .round {
+      width: auto;
+      min-width: 42px;
+      border-radius: 8px;
+      padding: 0 12px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .round.primary, .pill.primary, .game-btn.primary { background: var(--primary); color: #00120b; border-color: var(--primary); font-weight: 800; }
+    .chat-list { overflow-y: auto; padding: 12px; flex: 1; }
+    .chat-item {
+      padding: 12px 36px 12px 12px;
+      border: 1px solid var(--line);
+      background: rgba(23, 31, 38, .86);
+      border-radius: 8px;
+      margin-bottom: 9px;
+      position: relative;
+    }
+    .chat-item.active { border-color: var(--primary); background: rgba(53, 246, 163, .11); }
+    .chat-item strong { display: block; color: var(--primary); font-size: 13px; margin-bottom: 4px; }
+    .chat-item small { color: var(--muted); font-size: 11px; }
+    .chat-delete { position: absolute; right: 10px; top: 10px; color: var(--danger); opacity: .72; }
+    .app {
+      height: 100vh;
+      min-width: 0;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .topbar {
+      height: 62px;
+      flex: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid;
+      background: rgba(8, 12, 14, .84);
+      backdrop-filter: blur(12px);
+    }
+    .top-left, .top-actions, .status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .status { color: var(--muted); font-size: 12px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 16px var(--primary); }
+    .chat {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 18px clamp(12px, 3vw, 34px);
+    }
+    .welcome {
+      max-width: 980px;
+      margin: 0 auto 18px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .quick {
+      background: rgba(17, 22, 27, .78);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--muted);
+      min-height: 78px;
+      text-align: left;
+    }
+    .quick strong { display: block; color: var(--ink); margin-bottom: 4px; }
+    .message {
+      max-width: 860px;
+      margin: 10px auto;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .message.user { flex-direction: row-reverse; }
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      flex: none;
+      display: grid;
+      place-items: center;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+    }
+    .bubble {
+      max-width: min(720px, calc(100vw - 110px));
+      border: 1px solid var(--line);
+      background: rgba(17, 22, 27, .9);
+      border-radius: 8px;
+      padding: 12px 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      box-shadow: 0 8px 18px rgba(0,0,0,.18);
+    }
+    .user .bubble {
+      background: rgba(53, 246, 163, .12);
+      border-color: rgba(53, 246, 163, .5);
+    }
+    .meta { margin-top: 6px; color: #74848a; font-size: 10px; text-align: right; }
+    .typing { display: flex; gap: 5px; width: fit-content; }
+    .typing span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--primary);
+      animation: bounce 1.2s infinite ease-in-out;
+    }
+    .typing span:nth-child(2) { animation-delay: .15s; }
+    .typing span:nth-child(3) { animation-delay: .3s; }
+    @keyframes bounce { 0%, 80%, 100% { transform: translateY(0); opacity: .55; } 40% { transform: translateY(-7px); opacity: 1; } }
+    .composer {
+      flex: none;
+      border-top: 1px solid;
+      background: rgba(8, 12, 14, .9);
+      padding: 12px;
+    }
+    .input-row {
+      max-width: 980px;
+      margin: 0 auto;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    .attachment-strip {
+      max-width: 980px;
+      margin: 8px auto 0;
+      display: none;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .attachment-strip.show { display: flex; }
+    .attachment-chip {
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      max-width: min(310px, 100%);
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(23, 31, 38, .92);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .attachment-chip strong {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--ink);
+    }
+    .attachment-chip button {
+      width: 22px;
+      height: 22px;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(255, 79, 100, .18);
+      color: var(--danger);
+      flex: none;
+    }
+    textarea {
+      flex: 1;
+      min-height: 46px;
+      max-height: 140px;
+      resize: none;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: var(--ink);
+      background: var(--panel);
+      outline: none;
+    }
+    textarea:focus { border-color: var(--primary); }
+    .menu {
+      position: fixed;
+      right: 12px;
+      bottom: 74px;
+      width: min(360px, calc(100vw - 24px));
+      max-height: min(470px, calc(100vh - 132px));
+      overflow-y: auto;
+      display: none;
+      padding: 10px;
+      background: rgba(17, 22, 27, .98);
+      border: 1px solid rgba(53, 246, 163, .42);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      z-index: 50;
+      scrollbar-width: thin;
+    }
+    .menu.show { display: block; }
+    .section { padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .section:last-child { border-bottom: 0; }
+    .menu .section:first-child { padding-top: 0; }
+    .section-title { color: var(--muted); font-size: 10px; font-weight: 800; margin-bottom: 7px; text-transform: uppercase; letter-spacing: .04em; }
+    .field {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #090d10;
+      color: var(--ink);
+      padding: 10px 11px;
+      margin-bottom: 8px;
+      outline: none;
+    }
+    .field:focus { border-color: var(--primary); }
+    .hint {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+      margin: -2px 0 8px;
+    }
+    .row { display: flex; gap: 8px; align-items: center; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+    .menu .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .pill, .tab, .game-btn {
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+      min-height: 40px;
+    }
+    .menu .pill, .menu .tab {
+      min-height: 34px;
+      padding: 7px 8px;
+      font-size: 12px;
+      line-height: 1.15;
+    }
+    .chip { border-radius: 20px; padding: 7px 10px; font-size: 12px; color: var(--muted); }
+    .tab.active, .pill.active { border-color: var(--primary); color: #00120b; background: var(--primary); font-weight: 800; }
+    .notice {
+      position: fixed;
+      top: 74px;
+      right: 16px;
+      background: var(--panel-2);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      padding: 10px 14px;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      z-index: 80;
+      max-width: 320px;
+      font-size: 13px;
+    }
+    .game-zone {
+      display: none;
+      position: fixed;
+      inset: 74px 14px 84px 14px;
+      background: rgba(8, 12, 14, .98);
+      border: 1px solid rgba(53, 246, 163, .45);
+      border-radius: 10px;
+      z-index: 60;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .game-zone.show { display: grid; grid-template-rows: auto 1fr; }
+    .mode-zone {
+      display: none;
+      position: fixed;
+      inset: 74px 14px 84px 14px;
+      background: rgba(8, 12, 14, .98);
+      border: 1px solid rgba(53, 246, 163, .45);
+      border-radius: 10px;
+      z-index: 65;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .mode-zone.show { display: grid; grid-template-rows: auto 1fr; }
+    .mode-tabs, .mode-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mode-head {
+      justify-content: space-between;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .mode-body {
+      min-height: 0;
+      overflow: auto;
+      padding: 14px;
+    }
+    .mode-panel { display: none; max-width: 1120px; margin: 0 auto; }
+    .mode-panel.active { display: block; }
+    .split {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .tool-surface {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(17, 22, 27, .82);
+      padding: 12px;
+    }
+    .output {
+      min-height: 120px;
+      max-height: 320px;
+      overflow: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      color: var(--ink);
+      background: #090d10;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+    .draw-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .draw-canvas, .view-canvas {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      height: auto;
+      background: #061016;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      touch-action: none;
+    }
+    .secure-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .secure-msg {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      background: rgba(23, 31, 38, .72);
+    }
+    .secure-msg strong { color: var(--primary); }
+    .game-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .game-head .brand span:first-child { font-size: 0; }
+    .game-head .brand span:first-child::after { content: "GAME"; font-size: 13px; }
+    .game-tabs { display: flex; gap: 8px; overflow-x: auto; }
+    .game-area {
+      display: grid;
+      grid-template-columns: 1fr 250px;
+      min-height: 0;
+    }
+    .stage-wrap { display: grid; place-items: center; min-width: 0; padding: 12px; }
+    #gameCanvas {
+      width: min(100%, 860px);
+      height: min(100%, 540px);
+      max-height: calc(100vh - 190px);
+      aspect-ratio: 16 / 10;
+      background: #071018;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .game-side {
+      border-left: 1px solid var(--line);
+      padding: 12px;
+      background: rgba(17, 22, 27, .78);
+      color: var(--muted);
+      overflow-y: auto;
+    }
+    .score { color: var(--primary); font-size: 26px; font-weight: 900; margin: 8px 0; }
+    .game-zone[data-game="race"] { border-color: rgba(255, 209, 102, .62); }
+    .game-zone[data-game="race"] .game-side {
+      background: linear-gradient(180deg, rgba(34, 25, 14, .94), rgba(12, 15, 17, .86));
+    }
+    .game-zone[data-game="breaker"] { border-color: rgba(143, 124, 255, .66); }
+    .game-zone[data-game="pong"] { border-color: rgba(53, 246, 163, .66); }
+    .game-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .game-stat {
+      min-height: 48px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(8, 12, 14, .72);
+      padding: 8px;
+    }
+    .game-stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .game-stat strong {
+      color: var(--ink);
+      font-size: 15px;
+    }
+    .game-control-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .game-control {
+      min-height: 42px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: rgba(53, 246, 163, .12);
+      color: var(--ink);
+      font-weight: 800;
+      touch-action: none;
+      user-select: none;
+    }
+    .game-control:active { background: var(--primary); color: #00120b; }
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .image-grid img {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #000;
+    }
+    .image-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .image-actions a {
+      display: inline-flex;
+      min-height: 36px;
+      align-items: center;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--primary);
+      padding: 8px 10px;
+      text-decoration: none;
+      font-size: 13px;
+    }
+    .terms-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: none;
+      place-items: center;
+      padding: 18px;
+      background: rgba(2, 6, 8, .88);
+      backdrop-filter: blur(10px);
+    }
+    .terms-overlay.show { display: grid; }
+    .terms-card {
+      width: min(560px, 100%);
+      border: 1px solid rgba(53, 246, 163, .42);
+      border-radius: 10px;
+      background: #0d1317;
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    .terms-card h2 {
+      color: var(--primary);
+      font-size: 21px;
+      margin-bottom: 8px;
+    }
+    .terms-card p, .terms-card li {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .terms-card ul { margin: 10px 0 12px 20px; }
+    .terms-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .terms-links a {
+      color: var(--primary);
+      text-decoration: none;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      background: var(--panel-2);
+    }
+    .terms-check {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin: 12px 0;
+      color: var(--ink);
+      font-size: 13px;
+    }
+    .terms-check input { margin-top: 3px; }
+    .terms-card button:disabled { opacity: .45; cursor: not-allowed; }
+    .profile-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .profile-row input {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: var(--panel);
+      color: var(--ink);
+      outline: none;
+    }
+    .profile-stack {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .profile-divider {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+    .search-results {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .search-result {
+      display: block;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px;
+      color: var(--ink);
+      text-decoration: none;
+      background: rgba(23, 31, 38, .8);
+    }
+    .search-result strong { color: var(--primary); display: block; margin-bottom: 3px; }
+    .search-result span { color: var(--muted); font-size: 12px; }
+    .generated-image {
+      width: 100%;
+      max-height: 480px;
+      object-fit: contain;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #050809;
+      margin-top: 10px;
+    }
+    body.terms-locked .app,
+    body.terms-locked .sidebar,
+    body.terms-locked .menu,
+    body.terms-locked .game-zone,
+    body.terms-locked .mode-zone,
+    body.profile-locked .app,
+    body.profile-locked .sidebar,
+    body.profile-locked .menu,
+    body.profile-locked .game-zone,
+    body.profile-locked .mode-zone {
+      pointer-events: none;
+      user-select: none;
+      filter: blur(2px);
+    }
+    @media (max-width: 860px) {
+      .sidebar { position: absolute; width: min(86vw, 300px); min-width: 0; }
+      .menu { left: 12px; right: 12px; width: auto; max-height: min(440px, calc(100vh - 128px)); }
+      .menu .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .status { display: none; }
+      .welcome { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .top-actions { gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+      .mode-tabs, .game-tabs { overflow-x: auto; }
+      .game-area { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+      .game-side { border-left: 0; border-top: 1px solid var(--line); }
+      .split, .draw-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 520px) {
+      .brand span:last-child { display: none; }
+      .welcome { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; }
+      .chat { padding: 12px 10px; }
+      .message { gap: 8px; margin: 8px auto; }
+      .avatar { display: none; }
+      .bubble { max-width: 100%; width: 100%; }
+      .topbar { padding-inline: 9px; }
+      .top-actions .round, .composer .round { min-width: 38px; padding: 0 9px; }
+      .composer { padding: 8px; }
+      .input-row { gap: 6px; }
+      .game-zone, .mode-zone { inset: 64px 6px 74px 6px; }
+      .mode-head, .game-head { align-items: flex-start; }
+      .mode-head .brand, .game-head .brand { display: none; }
+    }
+
+    /* Device fit upgrade: fluid desktop, laptop, tablet, phone, and touch layouts. */
+    html {
+      height: 100%;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    body {
+      width: 100%;
+      min-height: 100dvh;
+      overscroll-behavior: none;
+    }
+    .app, .sidebar { min-height: 100dvh; }
+    .sidebar { height: 100dvh; }
+    .app {
+      width: 100%;
+      container-type: inline-size;
+    }
+    .topbar {
+      min-height: clamp(56px, 7dvh, 66px);
+      height: auto;
+      gap: 10px;
+      padding-top: max(10px, env(safe-area-inset-top));
+    }
+    .top-left { flex: 1 1 auto; }
+    .top-actions {
+      flex: 0 1 auto;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .top-actions::-webkit-scrollbar,
+    .game-tabs::-webkit-scrollbar,
+    .mode-tabs::-webkit-scrollbar { display: none; }
+    .brand, .side-title {
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: 0;
+    }
+    .chat {
+      padding-inline: clamp(10px, 3.2vw, 42px);
+      scroll-padding-bottom: 120px;
+    }
+    .welcome {
+      max-width: min(1120px, 100%);
+      grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
+    }
+    .quick {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .quick.power {
+      border-color: rgba(255, 209, 102, .52);
+      background: rgba(255, 209, 102, .08);
+    }
+    .message {
+      width: min(100%, 960px);
+      max-width: 960px;
+    }
+    .bubble {
+      max-width: min(760px, calc(100vw - 120px));
+      min-width: 0;
+    }
+    .composer {
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+    }
+    .input-row, .attachment-strip {
+      max-width: min(1120px, calc(100vw - 20px));
+    }
+    textarea {
+      width: 100%;
+      min-width: 0;
+    }
+    .menu {
+      width: min(430px, calc(100vw - 24px));
+      max-height: min(560px, calc(100dvh - 128px));
+      bottom: max(74px, calc(64px + env(safe-area-inset-bottom)));
+      border-radius: 8px;
+    }
+    .menu .grid {
+      grid-template-columns: repeat(auto-fit, minmax(min(116px, 100%), 1fr));
+    }
+    .grid {
+      grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+    }
+    .pill, .tab, .game-btn, .game-control {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .game-zone, .mode-zone {
+      inset: calc(70px + env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) calc(82px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+      border-radius: 8px;
+    }
+    .mode-head, .game-head {
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+    .mode-tabs, .game-tabs {
+      min-width: 0;
+      flex: 1 1 auto;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .mode-panel {
+      max-width: min(1220px, 100%);
+    }
+    .split, .draw-grid {
+      grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+    }
+    .tool-surface {
+      min-width: 0;
+    }
+    .draw-canvas, .view-canvas {
+      max-height: min(52dvh, 560px);
+    }
+    .game-area {
+      grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+    }
+    #gameCanvas {
+      width: min(100%, 920px);
+      height: auto;
+      max-height: min(64dvh, 620px);
+    }
+    .game-side {
+      min-width: 0;
+    }
+    .terms-card {
+      max-height: calc(100dvh - 36px);
+      overflow: auto;
+      border-radius: 8px;
+    }
+
+    @media (min-width: 1280px) {
+      .sidebar { width: 300px; min-width: 300px; }
+      .message { max-width: 1040px; }
+      .bubble { max-width: 820px; }
+      .welcome, .input-row, .attachment-strip { max-width: 1180px; }
+    }
+
+    @media (max-width: 1180px) and (min-width: 861px) {
+      .sidebar { width: 248px; min-width: 248px; }
+      .top-actions .round { min-width: 40px; padding-inline: 10px; }
+      .bubble { max-width: min(700px, calc(100vw - 360px)); }
+      .menu { width: min(400px, calc(100vw - 24px)); }
+      .game-area { grid-template-columns: minmax(0, 1fr) 230px; }
+    }
+
+    @media (max-width: 860px) {
+      body { overflow: hidden; }
+      .sidebar {
+        height: 100dvh;
+        box-shadow: var(--shadow);
+      }
+      .sidebar:not(.hidden)::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        transform: translateX(100%);
+        background: rgba(0, 0, 0, .32);
+      }
+      .topbar { align-items: center; }
+      .top-actions { max-width: 58vw; }
+      .chat { padding-bottom: 12px; }
+      .bubble { max-width: calc(100vw - 84px); }
+      .menu {
+        left: 10px;
+        right: 10px;
+        width: auto;
+        max-height: min(520px, calc(100dvh - 122px));
+      }
+      .game-zone, .mode-zone {
+        inset: calc(62px + env(safe-area-inset-top)) 8px calc(74px + env(safe-area-inset-bottom)) 8px;
+      }
+      .game-area {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(0, 1fr) auto;
+      }
+      .game-side {
+        max-height: min(34dvh, 230px);
+      }
+      #gameCanvas {
+        max-height: min(48dvh, 420px);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .topbar {
+        padding-inline: 8px;
+      }
+      .top-actions { max-width: 62vw; }
+      .top-actions .round { min-width: 42px; }
+      .composer { padding-inline: 8px; }
+      .input-row {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 7px;
+      }
+      #userInput {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        min-height: 48px;
+      }
+      #menuButton, #micButton, #fileButton, #sendButton {
+        width: 100%;
+        height: 44px;
+        min-width: 0;
+      }
+      .menu .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .mode-body {
+        padding: 10px;
+      }
+      .output {
+        max-height: 240px;
+      }
+      .draw-canvas, .view-canvas {
+        max-height: 42dvh;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .side-head { padding-inline: 10px; }
+      .top-actions { max-width: 58vw; }
+      .top-actions .round {
+        min-width: 40px;
+        padding-inline: 8px;
+        font-size: 12px;
+      }
+      .menu .grid, .grid {
+        grid-template-columns: 1fr;
+      }
+      .game-tabs .game-btn, .mode-tabs .game-btn {
+        min-width: 112px;
+      }
+      .game-zone, .mode-zone {
+        inset: calc(58px + env(safe-area-inset-top)) 4px calc(68px + env(safe-area-inset-bottom)) 4px;
+      }
+      .bubble {
+        padding: 11px 12px;
+      }
+    }
+
+    @media (max-height: 520px) and (orientation: landscape) {
+      .welcome { display: none; }
+      .topbar { min-height: 50px; }
+      .composer { padding-block: 6px; }
+      .menu {
+        top: 64px;
+        bottom: 64px;
+        max-height: calc(100dvh - 128px);
+      }
+      .game-zone, .mode-zone {
+        inset: 52px 6px 58px 6px;
+      }
+      .game-area {
+        grid-template-columns: minmax(0, 1fr) minmax(180px, 220px);
+        grid-template-rows: 1fr;
+      }
+      .game-side {
+        max-height: none;
+        border-left: 1px solid var(--line);
+        border-top: 0;
+      }
+      #gameCanvas {
+        max-height: calc(100dvh - 130px);
+      }
+    }
+
+    @media (hover: none), (pointer: coarse) {
+      .round, .pill, .tab, .game-btn, .game-control, .quick, .field, textarea {
+        min-height: 44px;
+      }
+      .chat-item {
+        min-height: 54px;
+      }
+      .chat, .menu, .mode-body, .game-side {
+        -webkit-overflow-scrolling: touch;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="terms-overlay" id="termsOverlay" role="dialog" aria-modal="true" aria-labelledby="termsTitle">
+    <div class="terms-card">
+      <h2 id="termsTitle">Accept Terms To Continue</h2>
+      <p>Before using Black Dragon, you must agree to the Terms and Privacy Policy.</p>
+      <ul>
+        <li>Use Black Dragon lawfully and responsibly.</li>
+        <li>Check important answers before relying on them.</li>
+        <li>Images and external results may come from third-party sources.</li>
+        <li>PC actions are limited to safe supported commands.</li>
+      </ul>
+      <div class="terms-links">
+        <a href="#" onclick="event.preventDefault(); ai.openPolicy('terms')">Read Terms</a>
+        <a href="#" onclick="event.preventDefault(); ai.openPolicy('privacy')">Read Privacy</a>
+      </div>
+      <label class="terms-check">
+        <input type="checkbox" id="termsAgree" onchange="ai.updateTermsButton()">
+        <span>I have read and agree to the Terms and Privacy Policy.</span>
+      </label>
+      <button class="pill primary" id="acceptTermsBtn" onclick="ai.acceptTerms()" disabled>Agree And Start</button>
+    </div>
+  </div>
+
+  <div class="terms-overlay" id="profileOverlay" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
+    <div class="terms-card">
+      <h2 id="profileTitle">Start Black Dragon</h2>
+      <p>Enter a profile name so Black Dragon can keep your chats, notes, and memory separated on this device.</p>
+      <div class="profile-stack">
+        <button class="pill" onclick="ai.continueWithGoogle()">Use Gmail as profile name</button>
+        <div class="profile-divider">local profile</div>
+        <div class="profile-row">
+          <input id="profileNameInput" placeholder="Gmail address or profile name" maxlength="80" autocomplete="username" onkeydown="if(event.key==='Enter'){ai.saveProfile()}">
+          <button class="pill primary" id="profileLoginButton" type="button" onclick="ai.saveProfile()">Login</button>
+        </div>
+      </div>
+      <div class="hint" id="profileLoginStatus" style="margin-top:10px;"></div>
+      <div class="hint" style="margin-top:10px;">No API key is stored in this page. Server keys stay in the backend or hosting secrets.</div>
+    </div>
+  </div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="side-head">
+      <div class="side-title">BD Chats</div>
+      <button class="round primary" onclick="ai.newChat()" title="New chat">+</button>
+    </div>
+    <div class="chat-list" id="chatList"></div>
+  </aside>
+
+  <main class="app">
+    <header class="topbar">
+      <div class="top-left">
+        <button class="round" onclick="ai.toggleSidebar()" id="sidebarToggle" title="Chats">menu</button>
+        <div class="brand"><span>BD</span><span>BLACK DRAGON</span></div>
+      </div>
+      <div class="top-actions">
+        <div class="status"><span class="dot"></span><span id="statusText">Ready</span></div>
+        <button class="round" onclick="ai.showProfileGate(true)" id="profileButton" title="Profile">Login</button>
+        <button class="round" onclick="ai.openMode('pc')" title="PC assistant">PC</button>
+        <button class="round" onclick="ai.openMode('draw')" title="Air Draw">3D</button>
+        <button class="round" onclick="ai.openMode('notes')" title="Notes">Notes</button>
+        <button class="round" onclick="ai.openGameZone()" title="Gaming zone">Games</button>
+      </div>
+    </header>
+
+    <section class="chat" id="chat">
+      <div class="welcome" id="welcome">
+        <button class="quick power" onclick="ai.toolPrompt('build')"><strong>Build feature</strong>Plan, code, verify</button>
+        <button class="quick power" onclick="ai.toolPrompt('review')"><strong>Review code</strong>Find bugs first</button>
+        <button class="quick" onclick="ai.quick('Search browser for latest AI news')"><strong>Browser search</strong>Find anything online</button>
+        <button class="quick" onclick="ai.quick('Show image of a black dragon')"><strong>Image lookup</strong>Get related pictures</button>
+        <button class="quick" onclick="ai.quick('Create a clear step-by-step production launch plan for Black Dragon AI, including frontend, backend, login, privacy, hosting, testing, security, mobile support, and release steps.')"><strong>Project plan</strong>Think like an agent</button>
+        <button class="quick" onclick="ai.openGameZone()"><strong>Gaming zone</strong>Play dragon games</button>
+      </div>
+    </section>
+
+    <footer class="composer">
+      <div class="input-row">
+        <button class="round" onclick="ai.toggleMenu()" id="menuButton" title="Tools">Tools</button>
+        <button class="round" onclick="ai.toggleRecording()" id="micButton" title="Voice input">Voice</button>
+        <button class="round" onclick="ai.triggerFilePicker()" id="fileButton" title="Attach file">File</button>
+        <textarea id="userInput" placeholder="Ask Black Dragon..." rows="1"></textarea>
+        <button class="round primary" onclick="ai.send()" id="sendButton" title="Send">Send</button>
+      </div>
+      <div class="attachment-strip" id="attachmentStrip"></div>
+    </footer>
+  </main>
+
+  <input id="fileInput" type="file" multiple hidden onchange="ai.handleFiles(this.files); this.value=''">
+
+  <div class="menu" id="toolMenu">
+    <div class="section">
+      <div class="section-title">Voice And Live Talk</div>
+      <div class="grid">
+        <button class="pill" onclick="ai.toggleVoice()" id="voiceBtn">Voice out: Off</button>
+        <button class="pill" onclick="ai.toggleLiveTalk()" id="liveBtn">Live talk: Off</button>
+        <button class="pill" onclick="ai.testMic()">Test mic</button>
+        <button class="pill" onclick="ai.stopSpeech()">Stop speech</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Modes</div>
+      <div class="grid">
+        <button class="tab active" onclick="ai.setMode('balanced')" data-mode="balanced">Balanced</button>
+        <button class="tab" onclick="ai.setMode('creative')" data-mode="creative">Creative</button>
+        <button class="tab" onclick="ai.setMode('precise')" data-mode="precise">Precise</button>
+        <button class="tab" onclick="ai.setMode('coding')" data-mode="coding">Coding</button>
+        <button class="tab" onclick="ai.setMode('study')" data-mode="study">Study</button>
+        <button class="tab" onclick="ai.setMode('research')" data-mode="research">Research</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Assistant Tools</div>
+      <div class="grid">
+        <button class="pill" onclick="ai.toolPrompt('summarize')">Summarize</button>
+        <button class="pill" onclick="ai.toolPrompt('rewrite')">Rewrite</button>
+        <button class="pill" onclick="ai.toolPrompt('translate')">Translate</button>
+        <button class="pill" onclick="ai.toolPrompt('code')">Code help</button>
+        <button class="pill" onclick="ai.toolPrompt('debug')">Debug</button>
+        <button class="pill" onclick="ai.toolPrompt('plan')">Plan</button>
+        <button class="pill" onclick="ai.toolPrompt('study')">Teach me</button>
+        <button class="pill" onclick="ai.toolPrompt('compare')">Compare</button>
+        <button class="pill" onclick="ai.toolPrompt('table')">Make table</button>
+        <button class="pill" onclick="ai.toolPrompt('email')">Write email</button>
+        <button class="pill" onclick="ai.showSystemStatus()">App status</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Power Workbench</div>
+      <div class="grid">
+        <button class="pill primary" onclick="ai.toolPrompt('build')">Build feature</button>
+        <button class="pill" onclick="ai.toolPrompt('review')">Review code</button>
+        <button class="pill" onclick="ai.toolPrompt('fix')">Fix bug</button>
+        <button class="pill" onclick="ai.toolPrompt('tests')">Write tests</button>
+        <button class="pill" onclick="ai.toolPrompt('refactor')">Refactor</button>
+        <button class="pill" onclick="ai.toolPrompt('spec')">Product spec</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Memory</div>
+      <div class="grid">
+        <button class="pill" onclick="ai.toolPrompt('remember')">Remember</button>
+        <button class="pill" onclick="ai.showMemory()">Show memory</button>
+        <button class="pill" onclick="ai.clearMemory()">Forget memory</button>
+        <button class="pill" onclick="ai.quick('What do you remember about me?')">Ask memory</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Fast Commands</div>
+      <div class="grid">
+        <button class="pill" onclick="ai.browserSearch()">Browser search</button>
+        <button class="pill" onclick="ai.imagePrompt()">Show image</button>
+        <button class="pill" onclick="ai.openAppPrompt()">Open app</button>
+        <button class="pill" onclick="ai.triggerFilePicker()">Attach file</button>
+        <button class="pill" onclick="ai.openMode('pc')">PC Assistant</button>
+        <button class="pill" onclick="ai.openMode('draw')">Air Draw 3D</button>
+        <button class="pill" onclick="ai.openMode('notes')">Notes</button>
+        <button class="pill" onclick="ai.quick('Summarize the attached file')">Summarize file</button>
+        <button class="pill" onclick="ai.quick('Explain this image')">Explain image</button>
+        <button class="pill" onclick="ai.copyLastAnswer()">Copy answer</button>
+        <button class="pill" onclick="ai.downloadLastAnswer()">Download answer</button>
+        <button class="pill" onclick="ai.openPolicy('terms')">Terms</button>
+        <button class="pill" onclick="ai.openPolicy('privacy')">Privacy</button>
+        <button class="pill" onclick="ai.openGameZone()">Gaming zone</button>
+        <button class="pill" onclick="ai.exportChats()">Export chats</button>
+        <button class="pill" onclick="ai.resetAll()">Reset all</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="game-zone" id="gameZone" aria-label="Gaming zone">
+    <div class="game-head">
+      <div class="brand"><span>🎮</span><span>Gaming Zone</span></div>
+      <div class="game-tabs">
+        <button class="game-btn primary" onclick="games.start('flap')">Flap Dragon</button>
+        <button class="game-btn" onclick="games.start('race')">Dragon Race</button>
+        <button class="game-btn" onclick="games.start('space')">Space Shooter</button>
+        <button class="game-btn" onclick="games.start('snake')">Feed Dragon</button>
+        <button class="game-btn" onclick="games.start('catch')">Dragon Catch</button>
+        <button class="game-btn" onclick="games.start('breaker')">Crystal Breaker</button>
+        <button class="game-btn" onclick="games.start('pong')">Dragon Pong under construction</button>
+      </div>
+      <button class="round" onclick="ai.closeGameZone()" title="Close">x</button>
+    </div>
+    <div class="game-area">
+      <div class="stage-wrap"><canvas id="gameCanvas" width="960" height="600"></canvas></div>
+      <aside class="game-side">
+        <div class="section-title" id="gameTitle">Flap Dragon</div>
+        <div class="score" id="score">0</div>
+        <p id="gameBest">Best: 0</p>
+        <p id="gameHelp">Space, click, or tap to flap. Avoid the towers.</p>
+        <div class="game-stat-grid" id="gameStats"></div>
+        <div class="game-control-grid" id="gameControls">
+          <button class="game-control" onpointerdown="games.pressControl('left')" onpointerup="games.releaseControl('left')" onpointerleave="games.releaseControl('left')">Left</button>
+          <button class="game-control" onpointerdown="games.pressControl('right')" onpointerup="games.releaseControl('right')" onpointerleave="games.releaseControl('right')">Right</button>
+          <button class="game-control" onpointerdown="games.pressControl('gas')" onpointerup="games.releaseControl('gas')" onpointerleave="games.releaseControl('gas')">Gas</button>
+          <button class="game-control" onpointerdown="games.pressControl('brake')" onpointerup="games.releaseControl('brake')" onpointerleave="games.releaseControl('brake')">Brake</button>
+        </div>
+        <div style="height:12px"></div>
+        <button class="pill primary" onclick="games.restart()">Restart</button>
+      </aside>
+    </div>
+  </section>
+
+  <section class="mode-zone" id="modeZone" aria-label="Advanced modes">
+    <div class="mode-head">
+      <div class="brand"><span>BLACK DRAGON MODES</span></div>
+      <div class="mode-tabs">
+        <button class="game-btn primary" onclick="ai.openMode('pc')" data-mode-tab="pc">PC Assistant</button>
+        <button class="game-btn" onclick="ai.openMode('draw')" data-mode-tab="draw">Air Draw 3D</button>
+        <button class="game-btn" onclick="ai.openMode('notes')" data-mode-tab="notes">Notes</button>
+        <button class="game-btn" onclick="ai.openMode('memory')" data-mode-tab="memory">Memory</button>
+      </div>
+      <button class="round" onclick="ai.closeMode()" title="Close">x</button>
+    </div>
+    <div class="mode-body">
+      <div class="mode-panel active" id="pcPanel">
+        <div class="split">
+          <div class="tool-surface">
+            <div class="section-title">PC Command Center</div>
+            <input class="field" id="pcCommand" placeholder="Try: system status, open notepad, process list, scan Downloads">
+            <div class="grid">
+              <button class="pill primary" onclick="ai.runPcCommand()">Run command</button>
+              <button class="pill" onclick="ai.pcStatus()">System status</button>
+              <button class="pill" onclick="ai.runPcCommand('open notepad')">Open Notepad</button>
+              <button class="pill" onclick="ai.runPcCommand('open calculator')">Open Calculator</button>
+              <button class="pill" onclick="ai.runPcCommand('process list')">Processes</button>
+              <button class="pill" onclick="ai.runPcCommand('network info')">Network</button>
+              <button class="pill" onclick="ai.coolingMode(false)">Cooling check</button>
+              <button class="pill" onclick="ai.coolingMode(true)">Cool PC</button>
+              <button class="pill" onclick="ai.scanCleanup()">Scan cleanup</button>
+              <button class="pill" onclick="ai.deleteCleanup()">Delete temp files</button>
+            </div>
+            <div class="hint">Dangerous commands are blocked. Safe app opens, status, network, process list, and scan commands are allowed.</div>
+          </div>
+          <div class="tool-surface">
+            <div class="section-title">Antivirus</div>
+            <input class="field" id="scanTarget" placeholder="Downloads, Desktop, Documents, or a full folder path">
+            <div class="grid">
+              <button class="pill primary" onclick="ai.scanPc()">Scan target</button>
+              <button class="pill" onclick="ai.scanPc('quick')">Quick scan</button>
+              <button class="pill" onclick="ai.scanPc('Downloads')">Scan Downloads</button>
+              <button class="pill" onclick="ai.scanPc('Desktop')">Scan Desktop</button>
+            </div>
+            <div class="hint">Uses Microsoft Defender when available, otherwise runs a suspicious-file scan.</div>
+          </div>
+        </div>
+        <div class="output" id="pcOutput">Ready for written or voice PC commands.</div>
+      </div>
+
+      <div class="mode-panel" id="drawPanel">
+        <div class="draw-grid">
+          <div class="tool-surface">
+            <div class="section-title">Draw 2D Shape</div>
+            <canvas class="draw-canvas" id="drawCanvas" width="720" height="540"></canvas>
+            <input class="field" id="airPrompt" placeholder="Describe model/environment: shooting range, city, forest, product test room">
+            <div class="grid">
+              <button class="pill primary" onclick="airDraw.convert()">Convert to 3D</button>
+              <button class="pill" onclick="airDraw.makeEnvironment()">Build environment</button>
+              <button class="pill" onclick="airDraw.pickImage()">Image to 3D</button>
+              <button class="pill" onclick="airDraw.exportObj()">Export OBJ</button>
+              <button class="pill" onclick="airDraw.clear()">Clear</button>
+            </div>
+            <input id="airImageInput" type="file" accept="image/*" hidden onchange="airDraw.imageTo3d(this.files[0]); this.value=''">
+          </div>
+          <div class="tool-surface">
+            <div class="section-title">3D Preview</div>
+            <canvas class="view-canvas" id="viewCanvas" width="720" height="540"></canvas>
+            <div class="hint" id="airOutput">Air Canvas builds an animated hologram-style 3D preview from your 2D stroke, image, or environment prompt.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mode-panel" id="notesPanel">
+        <div class="split">
+          <div class="tool-surface">
+            <div class="section-title">Typed Note</div>
+            <input class="field" id="noteTitle" placeholder="Note title">
+            <textarea class="field" id="noteText" placeholder="Write your note..." rows="8"></textarea>
+            <div class="section-title">Hand Drawn Note</div>
+            <canvas class="draw-canvas" id="noteCanvas" width="720" height="360"></canvas>
+            <div class="grid">
+              <button class="pill primary" onclick="notes.save()">Save note</button>
+              <button class="pill" onclick="notes.clearDrawing()">Clear drawing</button>
+              <button class="pill" onclick="notes.load()">Refresh notes</button>
+            </div>
+          </div>
+          <div class="tool-surface">
+            <div class="section-title">Saved Notes</div>
+            <div class="hint">Notes are saved privately on this device. You can type or draw with a mouse/finger.</div>
+            <div class="secure-list" id="notesList"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mode-panel" id="memoryPanel">
+        <div class="split">
+          <div class="tool-surface">
+            <div class="section-title">Save Memory</div>
+            <textarea class="field" id="memoryInput" placeholder="Example: I prefer short answers." rows="5"></textarea>
+            <div class="grid">
+              <button class="pill primary" onclick="ai.saveMemoryFromPanel()">Save memory</button>
+              <button class="pill" onclick="ai.loadMemoryPanel()">Refresh memory</button>
+              <button class="pill" onclick="ai.clearMemory()">Forget all</button>
+            </div>
+            <div class="hint">Black Dragon also learns simple personal facts when you clearly state them, such as your name or preferences.</div>
+          </div>
+          <div class="tool-surface">
+            <div class="section-title">Saved Memory</div>
+            <div class="secure-list" id="memoryList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const safeText = (s) => String(s || '').replace(/\s+/g, ' ').trim();
+    const BLACK_DRAGON_CONFIG = window.BLACK_DRAGON_CONFIG || {};
+    const HOSTED_BACKEND_FALLBACK = 'https://roky-dev-black-dragon-backend.hf.space';
+    const configuredBackendUrl = safeText(BLACK_DRAGON_CONFIG.backendUrl || window.BLACK_DRAGON_BACKEND_URL).replace(/\/+$/, '');
+    const LOCAL_BACKEND_HOST = /^(127\.0\.0\.1|localhost|0\.0\.0\.0|::1)$/i.test(location.hostname)
+      || /^192\.168\./.test(location.hostname)
+      || /^10\./.test(location.hostname)
+      || /^172\.(1[6-9]|2\d|3[01])\./.test(location.hostname);
+    const LOCAL_FRONTEND = location.protocol === 'file:' || LOCAL_BACKEND_HOST;
+    const HOSTED_API_PREFIX = '/qk9m7r2v';
+    const API_PREFIX = (safeText(BLACK_DRAGON_CONFIG.apiPrefix) || (LOCAL_FRONTEND ? '/api' : HOSTED_API_PREFIX)).replace(/\/+$/, '') || '/api';
+    const SAME_ORIGIN_BACKEND = Boolean(BLACK_DRAGON_CONFIG.sameOriginBackend)
+      || LOCAL_FRONTEND
+      || /\.hf\.space$/i.test(location.hostname);
+    // Private assistant configuration is kept outside browser code. Hosted websites use same-origin backend calls.
+    const BACKEND_BASE = configuredBackendUrl
+      || (location.protocol === 'file:' ? 'http://127.0.0.1:8787' : '')
+      || (SAME_ORIGIN_BACKEND ? '' : HOSTED_BACKEND_FALLBACK);
+    const REQUEST_TIMEOUT_MS = Math.max(
+      15000,
+      Number(BLACK_DRAGON_CONFIG.requestTimeoutMs || (/\.hf\.space$/i.test(location.hostname) ? 150000 : 55000)) || 55000
+    );
+    const apiUrl = (path) => BACKEND_BASE + API_PREFIX + String(path || '').replace(/^\/api(?=\/|$)/, '').replace(/^(?!\/)/, '/');
+    const TERMS_VERSION = '2026-06-08-v1';
+
+    class BlackDragonAI {
+      constructor() {
+        this.chats = [];
+        this.messages = [];
+        this.attachments = [];
+        this.currentChatId = '';
+        this.profileName = this.currentProfileName();
+        this.userId = this.deviceUserId();
+        this.state = {
+          voice: false,
+          liveTalk: false,
+          mode: 'balanced',
+          memory: [],
+          conversationMemory: '',
+          learningFacts: [],
+          lastLearningTurn: 0,
+          processing: false,
+          sidebarVisible: true
+        };
+        this.identity = {
+          name: 'Black Dragon'
+        };
+        this.coreStatus = { checkedAt: 0, online: false };
+        this.lastCoreError = '';
+        this.load();
+        this.setupInput();
+        this.setupVoice();
+        if (!this.chats.length) this.newChat(false);
+        else this.switchChat(this.chats[0].id);
+        this.applyModeUi();
+        this.updateVoiceUi();
+        this.fitSidebar();
+        window.addEventListener('resize', () => this.fitSidebar());
+        this.showTermsGate();
+        this.showProfileGate();
+        this.updateProfileUi();
+      }
+
+      termsAccepted() {
+        return localStorage.getItem('blackDragonTermsAcceptedVersion') === TERMS_VERSION;
+      }
+
+      authToken() {
+        const token = sessionStorage.getItem('blackDragonSessionToken') || localStorage.getItem('blackDragonSessionToken') || '';
+        const exp = Number(sessionStorage.getItem('blackDragonSessionExpiresAt') || localStorage.getItem('blackDragonSessionExpiresAt') || 0);
+        if (!token || (exp && Date.now() / 1000 > exp - 30)) return '';
+        return token;
+      }
+
+      hasAccess() {
+        return true;
+      }
+
+      authHeaders(extra = {}) {
+        const token = this.authToken();
+        return token ? { ...extra, Authorization: 'Bearer ' + token, 'X-Black-Dragon-Token': token } : { ...extra };
+      }
+
+      currentProfileName() {
+        return localStorage.getItem('blackDragonProfileName') || '';
+      }
+
+      stableId(text) {
+        let hash = 2166136261;
+        for (const ch of String(text || 'local')) {
+          hash ^= ch.charCodeAt(0);
+          hash = Math.imul(hash, 16777619);
+        }
+        return (hash >>> 0).toString(36);
+      }
+
+      profileId(name) {
+        return 'profile-' + this.stableId(String(name || 'local').toLowerCase().trim());
+      }
+
+      deviceUserId() {
+        const profile = this.currentProfileName();
+        if (profile) return this.profileId(profile);
+        let id = localStorage.getItem('blackDragonUserId');
+        if (!id) {
+          id = 'bd-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+          localStorage.setItem('blackDragonUserId', id);
+        }
+        return id;
+      }
+
+      showProfileGate(force = false) {
+        const overlay = $('profileOverlay');
+        if (!overlay) return;
+        const locked = this.termsAccepted() && (force || !this.currentProfileName() || !this.hasAccess());
+        overlay.classList.toggle('show', locked);
+        document.body.classList.toggle('profile-locked', locked);
+        const input = $('profileNameInput');
+        if (input) input.value = this.currentProfileName();
+        if (locked) setTimeout(() => input?.focus(), 60);
+      }
+
+      async saveProfile() {
+        const input = $('profileNameInput');
+        const button = $('profileLoginButton');
+        const status = $('profileLoginStatus');
+        const setStatus = (message, good = false) => {
+          if (!status) return;
+          status.textContent = message || '';
+          status.style.color = good ? 'var(--primary)' : 'var(--warn)';
+        };
+        const name = safeText(input?.value || '').slice(0, 80);
+        if (!name) {
+          this.toast('Enter a profile name first.');
+          setStatus('Enter a profile name first.');
+          return;
+        }
+        if (button) {
+          button.disabled = true;
+          button.textContent = 'Opening...';
+        }
+        setStatus('Opening profile...');
+        try {
+          localStorage.setItem('blackDragonProfileName', name);
+          this.profileName = name;
+          this.userId = this.profileId(name);
+          $('profileOverlay')?.classList.remove('show');
+          document.body.classList.remove('profile-locked');
+          setStatus('Profile ready.', true);
+          this.updateProfileUi();
+          this.loadMemoryPanel();
+          $('userInput')?.focus();
+        } catch (error) {
+          const message = 'Could not save profile. Refresh and try again.';
+          this.toast(message);
+          setStatus(message);
+        } finally {
+          if (button) {
+            button.disabled = false;
+            button.textContent = 'Login';
+          }
+        }
+      }
+
+      async continueWithGoogle() {
+        const clientId = window.BLACK_DRAGON_GOOGLE_CLIENT_ID || localStorage.getItem('blackDragonGoogleClientId') || '';
+        if (clientId) await this.loadGoogleIdentity();
+        if (clientId && window.google?.accounts?.id) {
+          window.google.accounts.id.initialize({
+            client_id: clientId,
+            callback: (response) => this.handleGoogleCredential(response)
+          });
+          window.google.accounts.id.prompt();
+          return;
+        }
+        const email = prompt('Enter your Gmail address for this local Black Dragon profile:');
+        if (!email) return;
+        $('profileNameInput').value = email.trim();
+        this.saveProfile();
+      }
+
+      loadGoogleIdentity() {
+        if (window.google?.accounts?.id) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+          const existing = document.querySelector('script[data-google-identity]');
+          if (existing) {
+            existing.addEventListener('load', resolve, { once: true });
+            existing.addEventListener('error', reject, { once: true });
+            return;
+          }
+          const script = document.createElement('script');
+          script.src = 'https://accounts.google.com/gsi/client';
+          script.async = true;
+          script.defer = true;
+          script.dataset.googleIdentity = 'true';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        }).catch(() => this.toast('Google sign-in script could not load. Use Gmail/profile manually.'));
+      }
+
+      handleGoogleCredential(response) {
+        try {
+          const payload = JSON.parse(atob(response.credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+          const label = payload.email || payload.name || 'Google user';
+          $('profileNameInput').value = label;
+          this.saveProfile();
+        } catch (error) {
+          this.toast('Google sign-in could not be read. Use Gmail/profile manually.');
+        }
+      }
+
+      updateProfileUi() {
+        const label = this.currentProfileName() || 'Login';
+        const button = $('profileButton');
+        if (button) button.textContent = this.hasAccess() && label ? (label.length > 10 ? label.slice(0, 9) + '.' : label) : 'Login';
+      }
+
+      showTermsGate() {
+        const overlay = $('termsOverlay');
+        if (!overlay) return;
+        const locked = !this.termsAccepted();
+        overlay.classList.toggle('show', locked);
+        document.body.classList.toggle('terms-locked', locked);
+        this.updateTermsButton();
+      }
+
+      updateTermsButton() {
+        const button = $('acceptTermsBtn');
+        const checkbox = $('termsAgree');
+        if (button) button.disabled = !checkbox?.checked;
+      }
+
+      async acceptTerms() {
+        if (!$('termsAgree')?.checked) return;
+        localStorage.setItem('blackDragonTermsAccepted', 'yes');
+        localStorage.setItem('blackDragonTermsAcceptedVersion', TERMS_VERSION);
+        try {
+          await this.backendPost('/api/terms/accept', { userId: this.userId }, false);
+        } catch (error) {}
+        $('termsOverlay')?.classList.remove('show');
+        document.body.classList.remove('terms-locked');
+        this.showProfileGate();
+        if (this.currentProfileName()) $('userInput')?.focus();
+      }
+
+      termsPayload() {
+        return {
+          termsAccepted: this.termsAccepted(),
+          termsVersion: TERMS_VERSION
+        };
+      }
+
+      requireTerms() {
+        if (this.termsAccepted() && this.hasAccess()) return true;
+        if (this.termsAccepted() && !this.hasAccess()) {
+          this.showProfileGate(true);
+          this.toast('Start your Black Dragon profile first.');
+          return false;
+        }
+        this.showTermsGate();
+        this.toast('Please agree to the Terms and Privacy Policy first.');
+        return false;
+      }
+
+      setupInput() {
+        const input = $('userInput');
+        input.addEventListener('input', () => {
+          input.style.height = '46px';
+          input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+        });
+        input.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            this.send();
+          }
+        });
+      }
+
+      fitSidebar() {
+        if (innerWidth <= 860) {
+          $('sidebar').classList.add('hidden');
+          this.state.sidebarVisible = false;
+        } else {
+          $('sidebar').classList.remove('hidden');
+          this.state.sidebarVisible = true;
+        }
+        $('sidebarToggle').textContent = this.state.sidebarVisible ? 'x' : 'menu';
+      }
+
+      setupVoice() {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) return;
+        this.recognition = new SR();
+        this.recognition.lang = 'en-US';
+        this.recognition.continuous = false;
+        this.recognition.interimResults = false;
+        this.recognition.onresult = (event) => {
+          const text = event.results[0][0].transcript;
+          $('userInput').value = text;
+          this.send();
+        };
+        this.recognition.onend = () => {
+          $('micButton').classList.remove('primary');
+          if (this.state.liveTalk) setTimeout(() => this.startRecording(), 350);
+        };
+        this.recognition.onerror = () => this.toast('Microphone could not hear clearly.');
+      }
+
+      newChat(greet = true) {
+        if (greet && !this.requireTerms()) return;
+        const chat = { id: String(Date.now()), title: 'New chat', preview: 'Ready', messages: [], timestamp: Date.now() };
+        this.chats.unshift(chat);
+        this.currentChatId = chat.id;
+        this.messages = chat.messages;
+        this.renderChatList();
+        $('chat').innerHTML = '';
+        this.renderWelcome();
+        if (greet) this.addMessage('Hello. Ask anything, search the web, open apps, attach files, show images, use live talk, or play games.', 'ai');
+        this.save();
+      }
+
+      renderWelcome() {
+        if (this.messages.length) return;
+        $('chat').innerHTML = `
+          <div class="welcome" id="welcome">
+            <button class="quick power" onclick="ai.toolPrompt('build')"><strong>Build feature</strong>Plan, code, verify</button>
+            <button class="quick power" onclick="ai.toolPrompt('review')"><strong>Review code</strong>Find bugs first</button>
+            <button class="quick" onclick="ai.quick('Search browser for latest AI news')"><strong>Browser search</strong>Find anything online</button>
+            <button class="quick" onclick="ai.quick('Show image of a black dragon')"><strong>Image lookup</strong>Get related pictures</button>
+            <button class="quick" onclick="ai.quick('Create a clear step-by-step production launch plan for Black Dragon AI, including frontend, backend, login, privacy, hosting, testing, security, mobile support, and release steps.')"><strong>Project plan</strong>Think like an agent</button>
+            <button class="quick" onclick="ai.openGameZone()"><strong>Gaming zone</strong>Play dragon games</button>
+          </div>`;
+      }
+
+      switchChat(id) {
+        const chat = this.chats.find((c) => c.id === id);
+        if (!chat) return;
+        this.currentChatId = id;
+        this.messages = chat.messages || [];
+        $('chat').innerHTML = '';
+        if (!this.messages.length) this.renderWelcome();
+        this.messages.forEach((m) => this.renderMessage(m));
+        this.renderChatList();
+        if (innerWidth <= 860 && this.state.sidebarVisible) this.toggleSidebar();
+      }
+
+      deleteChat(id, event) {
+        event.stopPropagation();
+        this.chats = this.chats.filter((c) => c.id !== id);
+        if (!this.chats.length) return this.newChat();
+        if (this.currentChatId === id) this.switchChat(this.chats[0].id);
+        this.renderChatList();
+        this.save();
+      }
+
+      renderChatList() {
+        $('chatList').innerHTML = this.chats.map((c) => `
+          <div class="chat-item ${c.id === this.currentChatId ? 'active' : ''}" onclick="ai.switchChat('${c.id}')">
+            <strong>${this.escape(c.title || 'Chat')}</strong>
+            <small>${this.escape(c.preview || '')}</small>
+            <span class="chat-delete" onclick="ai.deleteChat('${c.id}', event)">x</span>
+          </div>`).join('');
+      }
+
+      renderMessage(m) {
+        const row = document.createElement('div');
+        row.className = 'message ' + (m.sender === 'user' ? 'user' : 'ai');
+        row.innerHTML = `
+          <div class="avatar">${m.sender === 'user' ? 'You' : 'BD'}</div>
+          <div class="bubble"><div class="content"></div><div class="meta">${new Date(m.timestamp).toLocaleTimeString()}</div></div>`;
+        row.querySelector('.content').textContent = m.content;
+        $('chat').appendChild(row);
+        $('chat').scrollTop = $('chat').scrollHeight;
+      }
+
+      addMessage(content, sender) {
+        const m = { id: Date.now() + Math.random(), content, sender, timestamp: Date.now() };
+        this.messages.push(m);
+        const chat = this.chats.find((c) => c.id === this.currentChatId);
+        if (chat) {
+          chat.messages = this.messages;
+          chat.preview = safeText(content).slice(0, 46) || 'Ready';
+          if (sender === 'user' && chat.title === 'New chat') chat.title = safeText(content).slice(0, 28) || 'Chat';
+          chat.timestamp = Date.now();
+        }
+        this.renderMessage(m);
+        this.renderChatList();
+        this.save();
+      }
+
+      showTyping() {
+        const row = document.createElement('div');
+        row.className = 'message ai';
+        row.id = 'typing';
+        row.innerHTML = '<div class="avatar">BD</div><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>';
+        $('chat').appendChild(row);
+        $('chat').scrollTop = $('chat').scrollHeight;
+      }
+
+      hideTyping() {
+        const t = $('typing');
+        if (t) t.remove();
+      }
+
+      async send() {
+        if (this.state.processing) return;
+        if (!this.requireTerms()) return;
+        const input = $('userInput');
+        const msg = input.value.trim();
+        const attachments = this.attachments.slice();
+        if (!msg && !attachments.length) return;
+        this.state.processing = true;
+        $('sendButton').disabled = true;
+        input.disabled = true;
+        input.value = '';
+        input.style.height = '46px';
+        this.clearAttachments(false);
+        const shownMessage = msg || 'Analyze the attached file';
+        const shownAttachments = attachments.length ? '\nAttached: ' + attachments.map((a) => a.name).join(', ') : '';
+        this.addMessage(shownMessage + shownAttachments, 'user');
+        this.showTyping();
+        let reply = '';
+        try {
+          reply = await this.answer(shownMessage, attachments);
+        } catch (error) {
+          reply = 'I hit a problem, but I am still here. Try again with a shorter command.';
+        }
+        this.hideTyping();
+        this.addMessage(reply, 'ai');
+        this.learnFromTurn(shownMessage, reply);
+        if (this.state.voice) this.speak(reply);
+        this.state.processing = false;
+        $('sendButton').disabled = false;
+        input.disabled = false;
+        input.focus();
+      }
+
+      async answer(raw, attachments = []) {
+        const msg = raw.trim();
+        const local = this.localAnswer(msg);
+        if (local) return local;
+
+        const command = await this.tryCommand(msg);
+        if (command) return command;
+
+        const aiText = await this.askCore(msg, attachments);
+        if (aiText) return this.cleanAnswer(aiText);
+
+        const online = await this.backendReady();
+        if (!online) return 'Black Dragon core is not running. Start it with start-backend.bat or BlackDragon-Chrome-App.bat, then refresh this page.';
+
+        if (this.lastCoreError === 'timeout') {
+          return 'Black Dragon answer engine is taking too long to answer. Ask once more after a few seconds.';
+        }
+        return 'Black Dragon did not return an answer. The backend is reachable, but the answer engine may be busy. Try once more or ask a shorter question.';
+      }
+
+      localAnswer(msg) {
+        const l = msg.toLowerCase();
+        if (/^(remember|save memory|remember that|memorize)\b/.test(l)) return null;
+        if (/(what do you remember|show memory|my memory|remember about me|forget memory|clear memory|delete memory|erase memory)/.test(l)) return null;
+        const memoryReply = this.memoryCommand(msg);
+        if (memoryReply) return memoryReply;
+        if (l === '/clear') { this.messages = []; $('chat').innerHTML = ''; this.renderWelcome(); this.save(); return 'Chat cleared.'; }
+        if (l === '/help') return 'Try: "open YouTube", "search browser for laptops", "show image of dragon city", "attach file", "summarize this", "remember that I like short answers", or "play flap dragon".';
+        return null;
+      }
+
+      async tryCommand(msg) {
+        const l = msg.toLowerCase();
+        if (/^(search|google|browse|browser search|web search|look up|find online)\b/.test(l) || /search (the )?(web|internet|browser) for/.test(l)) {
+          const q = msg
+            .replace(/^(search|google|browse|browser search|web search|look up|find online)\s*/i, '')
+            .replace(/search (the )?(web|internet|browser) for/i, '')
+            .trim();
+          return await this.webSearch(q || msg);
+        }
+        if (/^(open|launch)\b/.test(l)) {
+          const target = msg.replace(/^(open|launch)\s*/i, '').replace(/^(the\s+)?(app|website|site)\s+/i, '').trim();
+          if (/(notepad|calculator|calc|paint|file explorer|explorer|cmd|terminal|powershell|settings)/i.test(target)) {
+            return await this.runPcCommand('open ' + target, true);
+          }
+          return this.openAppOrSite(target);
+        }
+        if (/^(install|download)\b/.test(l)) {
+          const target = msg.replace(/^(install|download)\s*/i, '').trim();
+          this.openSearch((target || 'app') + ' official download');
+          return 'Opened a browser search for the official download. Check the publisher before installing.';
+        }
+        if (/\b(create|make|new|signup|sign up)\b.*\b(gmail|google account)\b/.test(l)) {
+          window.open('https://accounts.google.com/signup', '_blank', 'noopener,noreferrer');
+          return 'Opened the Google account signup page. Complete the personal details yourself for privacy and site compliance.';
+        }
+        if (/^(pc|computer)\b/.test(l)) {
+          return await this.runPcCommand(msg.replace(/^(pc|computer)\s*/i, ''), true);
+        }
+        if (/(cool|cooling|overheat|over heat|temperature|thermal).*(pc|computer|laptop)|^(cool|cooling|overheat)/.test(l)) {
+          return await this.runPcCommand(msg, true);
+        }
+        if (/^(scan|antivirus|virus scan)\b/.test(l)) {
+          return await this.runPcCommand(msg, true);
+        }
+        if (/^(start|enable|turn on)\s+live talk/.test(l)) {
+          if (!this.state.liveTalk) this.toggleLiveTalk();
+          return 'Live talk is on.';
+        }
+        if (/^(stop|disable|turn off)\s+live talk/.test(l)) {
+          if (this.state.liveTalk) this.toggleLiveTalk();
+          return 'Live talk is off.';
+        }
+        if (/^(stop speaking|stop voice|quiet)\b/.test(l)) {
+          this.stopSpeech();
+          return 'Voice stopped.';
+        }
+        if (/^(attach|upload|add)\s+(a\s+)?(file|image|photo|picture)/.test(l)) {
+          this.triggerFilePicker();
+          return 'Choose a file, then send your question with it.';
+        }
+        if (/^(copy|download)\s+(last\s+)?(answer|reply|response)/.test(l)) {
+          if (l.startsWith('copy')) this.copyLastAnswer();
+          else this.downloadLastAnswer();
+          return 'Done.';
+        }
+        if (/(generate|create|make|draw).*(image|photo|picture|art)|image generation/.test(l)) {
+          const q = msg.replace(/(generate|create|make|draw|image|photo|picture|art|of|for|related to)/gi, ' ').replace(/\s+/g, ' ').trim() || msg;
+          return this.generateImage(q);
+        }
+        if (/(show|find|get).*(image|photo|picture)|image of|photo of|picture of/.test(l)) {
+          const q = msg.replace(/(show|find|get|generate|create|image|photo|picture|of|for|related to)/gi, ' ').replace(/\s+/g, ' ').trim() || msg;
+          return await this.imageResult(q);
+        }
+        if (/(play|game|gaming).*(flap|flappy|race|car|space|shooter|snake|feed|catch|breaker|crystal|pong)|gaming zone/.test(l)) {
+          this.openGameZone();
+          if (l.includes('race') || l.includes('car')) games.start('race');
+          else if (l.includes('space') || l.includes('shooter')) games.start('space');
+          else if (l.includes('snake') || l.includes('feed')) games.start('snake');
+          else if (l.includes('catch')) games.start('catch');
+          else if (l.includes('breaker') || l.includes('crystal')) games.start('breaker');
+          else if (l.includes('pong')) games.start('pong');
+          else games.start('flap');
+          return 'Gaming Zone opened.';
+        }
+        return null;
+      }
+
+      async askCore(prompt, attachments = []) {
+        const backendText = await this.askBackend(prompt, attachments);
+        if (backendText) return backendText;
+        return null;
+      }
+
+      async backendReady() {
+        const now = Date.now();
+        if (now - this.coreStatus.checkedAt < 30000) return this.coreStatus.online;
+        try {
+          const res = await fetch(apiUrl('/health'), { cache: 'no-store', headers: this.authHeaders() });
+          this.coreStatus = { checkedAt: now, online: res.ok };
+          return res.ok;
+        } catch (error) {
+          this.coreStatus = { checkedAt: now, online: false };
+          return false;
+        }
+      }
+
+      async askBackend(prompt, attachments = []) {
+        if (!BACKEND_BASE && !SAME_ORIGIN_BACKEND) return null;
+        const controller = new AbortController();
+        this.lastCoreError = '';
+        const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+        try {
+          $('statusText').textContent = 'Thinking';
+          const profile = this.state.mode === 'coding' ? 'tech' : this.state.mode === 'research' ? 'research' : 'default';
+          const payload = {
+            prompt,
+            mode: this.state.mode,
+            profile,
+            userId: this.userId,
+            conversationMemory: this.backendConversationContext(),
+            ...this.termsPayload(),
+            attachments: attachments.map((a) => ({
+              kind: a.kind,
+              name: a.name,
+              mime: a.mime,
+              text: a.text,
+              dataUrl: a.dataUrl
+            }))
+          };
+          const res = await fetch(apiUrl('/chat'), {
+            method: 'POST',
+            headers: this.authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+          $('statusText').textContent = 'Ready';
+          clearTimeout(timer);
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) return data.answer || null;
+          return data.answer || null;
+        } catch (error) {
+          clearTimeout(timer);
+          $('statusText').textContent = 'Ready';
+          this.lastCoreError = error?.name === 'AbortError' ? 'timeout' : 'network';
+          console.warn('Black Dragon core unavailable', error);
+          return null;
+        }
+      }
+
+      buildUserContent(prompt, attachments = []) {
+        const memory = this.memoryContext();
+        const textFiles = attachments
+          .filter((a) => a.kind === 'text')
+          .map((a) => '\n\nAttached file: ' + a.name + '\n' + a.text.slice(0, 18000))
+          .join('');
+        const text = [memory, (prompt || 'Analyze the attachment'), textFiles].filter(Boolean).join('\n\n');
+        const images = attachments.filter((a) => a.kind === 'image');
+        if (!images.length) return text;
+        return [
+          { type: 'text', text },
+          ...images.map((a) => ({ type: 'image_url', image_url: { url: a.dataUrl } }))
+        ];
+      }
+
+      cleanAnswer(text) {
+        return text
+          .replace(/\b(?:gsk_|sk-or-v1-)[A-Za-z0-9_-]{12,}\b/g, '[redacted key]')
+          .replace(/\bBearer\s+[A-Za-z0-9._-]{12,}\b/gi, 'Bearer [redacted key]')
+          .replace(/\n{3,}/g, '\n\n')
+          .trim();
+      }
+
+      temperatureForMode() {
+        const temps = {
+          creative: 0.95,
+          precise: 0.25,
+          coding: 0.35,
+          study: 0.55,
+          research: 0.4,
+          balanced: 0.65
+        };
+        return temps[this.state.mode] ?? temps.balanced;
+      }
+
+      modeInstruction() {
+        const modes = {
+          creative: 'Use imaginative options and original phrasing while staying useful.',
+          precise: 'Prefer exact answers, assumptions, and short structured output.',
+          coding: 'Act like a senior coding assistant: reason from the task, produce implementation-ready code or edits, name edge cases, include tests or verification, and keep the answer direct.',
+          study: 'Teach clearly with examples, checks for understanding, and simple explanations.',
+          research: 'Synthesize carefully, compare possibilities, and say when a live browser search would help.',
+          balanced: 'Balance helpful detail with brevity.'
+        };
+        return modes[this.state.mode] || modes.balanced;
+      }
+
+      memoryContext() {
+        const memory = Array.isArray(this.state.memory) ? this.state.memory.slice(-20) : [];
+        const conversation = this.conversationContext();
+        const parts = [];
+        if (memory.length) parts.push('Remembered local user facts:\n' + memory.map((item, index) => `${index + 1}. ${item}`).join('\n'));
+        if (conversation) parts.push(conversation);
+        return parts.join('\n\n');
+      }
+
+      conversationContext() {
+        const summary = safeText(this.state.conversationMemory || '');
+        const facts = Array.isArray(this.state.learningFacts) ? this.state.learningFacts.slice(-12) : [];
+        const parts = [];
+        if (summary) parts.push('Conversation memory summary: ' + summary);
+        if (facts.length) parts.push('Learned from recent conversation:\n' + facts.map((fact) => '- ' + fact).join('\n'));
+        return parts.join('\n');
+      }
+
+      backendConversationContext() {
+        const context = this.conversationContext();
+        return context.length > 900 ? context.slice(-900) : context;
+      }
+
+      learnFromTurn(userText, aiText) {
+        const user = safeText(userText).slice(0, 260);
+        const ai = safeText(aiText).slice(0, 260);
+        if (!user) return;
+        const facts = Array.isArray(this.state.learningFacts) ? this.state.learningFacts : [];
+        const lower = user.toLowerCase();
+        const patterns = [
+          [/my name is\s+([^.!?]{2,60})/i, 'User name: {0}'],
+          [/call me\s+([^.!?]{2,60})/i, 'Preferred name: {0}'],
+          [/i (?:want|need|am building|am making)\s+([^.!?]{4,120})/i, 'User goal/project: {0}'],
+          [/i (?:like|prefer|love)\s+([^.!?]{3,100})/i, 'User preference: {0}'],
+          [/i (?:do not like|don't like|hate)\s+([^.!?]{3,100})/i, 'User dislike: {0}']
+        ];
+        for (const [regex, template] of patterns) {
+          const match = user.match(regex);
+          if (match?.[1]) {
+            const fact = template.replace('{0}', match[1].trim());
+            if (!facts.some((x) => x.toLowerCase() === fact.toLowerCase())) facts.push(fact.slice(0, 180));
+          }
+        }
+        if (/black dragon|bd|app|backend|apk|website|memory|login|image|pc|game/.test(lower)) {
+          const note = `Recent topic: ${user}`;
+          if (!facts.some((x) => x === note)) facts.push(note.slice(0, 180));
+        }
+        this.state.learningFacts = facts.slice(-40);
+        const recent = this.messages.slice(-10).map((m) => `${m.sender === 'user' ? 'User' : 'BD'}: ${safeText(m.content).slice(0, 140)}`);
+        this.state.conversationMemory = recent.join(' | ').slice(-1400);
+        this.state.lastLearningTurn = Date.now();
+        this.save();
+        if (facts.length && facts.length % 4 === 0) {
+          this.backendPost('/api/memory/add', { userId: this.userId, text: 'Conversation learning: ' + facts.slice(-4).join('; ') }).catch(() => {});
+        }
+      }
+
+      memoryCommand(msg) {
+        const l = msg.toLowerCase().trim();
+        if (/^(remember that|remember|save memory)\b/.test(l)) {
+          const fact = msg.replace(/^(remember that|remember|save memory)\s*/i, '').trim();
+          if (!fact) return 'Tell me what to remember.';
+          this.state.memory = Array.isArray(this.state.memory) ? this.state.memory : [];
+          this.state.memory.push(fact.slice(0, 240));
+          this.state.memory = this.state.memory.slice(-40);
+          this.save();
+          return 'I will remember that locally.';
+        }
+        if (/(what do you remember|show memory|my memory|conversation memory|what are we talking about)/.test(l)) return this.memorySummary();
+        if (/(forget memory|clear memory|delete memory)/.test(l)) {
+          this.state.memory = [];
+          this.state.conversationMemory = '';
+          this.state.learningFacts = [];
+          this.save();
+          return 'Memory cleared.';
+        }
+        return null;
+      }
+
+      memorySummary() {
+        const memory = Array.isArray(this.state.memory) ? this.state.memory : [];
+        const facts = Array.isArray(this.state.learningFacts) ? this.state.learningFacts : [];
+        const summary = safeText(this.state.conversationMemory || '');
+        if (!memory.length && !facts.length && !summary) return 'I do not have any local memory saved yet.';
+        return [
+          memory.length ? 'Saved memory:\n' + memory.map((item, index) => `${index + 1}. ${item}`).join('\n') : '',
+          facts.length ? 'Learned conversation facts:\n' + facts.map((item, index) => `${index + 1}. ${item}`).join('\n') : '',
+          summary ? 'Conversation summary:\n' + summary : ''
+        ].filter(Boolean).join('\n\n');
+      }
+
+      calculate(input) {
+        const expr = input
+          .replace(/^(calculate|calc|solve|what is|what's)\s*/i, '')
+          .replace(/[×x]/gi, '*')
+          .replace(/[÷]/g, '/')
+          .trim();
+        if (!expr || !/^[\d\s+\-*/().%^]+$/.test(expr)) return null;
+        try {
+          const normalized = expr.replace(/\^/g, '**');
+          const value = Function('"use strict"; return (' + normalized + ')')();
+          if (!Number.isFinite(value)) return null;
+          return expr + ' = ' + Number(value.toFixed(10));
+        } catch (error) {
+          return null;
+        }
+      }
+
+      async liveKnowledge(query) {
+        const wiki = await this.searchWiki(query);
+        if (wiki) return wiki;
+        const ddg = await this.searchDdg(query);
+        if (ddg) return ddg;
+        return null;
+      }
+
+      async searchWiki(query) {
+        try {
+          let res = await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(query));
+          if (res.ok) {
+            const data = await res.json();
+            if (data.extract && !/may refer to/i.test(data.extract)) return data.extract.slice(0, 1100);
+          }
+          res = await fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srsearch=' + encodeURIComponent(query));
+          const list = await res.json();
+          const title = list.query?.search?.[0]?.title;
+          if (!title) return null;
+          res = await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(title));
+          if (!res.ok) return null;
+          const data = await res.json();
+          return data.extract ? data.extract.slice(0, 1100) : null;
+        } catch (error) {
+          return null;
+        }
+      }
+
+      async searchDdg(query) {
+        try {
+          const res = await fetch('https://api.duckduckgo.com/?format=json&no_html=1&skip_disambig=1&q=' + encodeURIComponent(query));
+          if (!res.ok) return null;
+          const data = await res.json();
+          return data.Abstract || data.RelatedTopics?.find((x) => x.Text)?.Text || null;
+        } catch (error) {
+          return null;
+        }
+      }
+
+      async webSearch(query) {
+        const q = safeText(query || 'Black Dragon');
+        try {
+          const res = await fetch(apiUrl('/web/search') + '?q=' + encodeURIComponent(q), { cache: 'no-store', headers: this.authHeaders() });
+          const data = await res.json();
+          this.renderSearchBubble(q, data.results || [], data.searchUrl);
+          if ((data.results || []).length) return 'I found search results for: ' + q;
+        } catch (error) {
+          console.warn('Backend search failed', error);
+        }
+        this.openSearch(q);
+        return 'Opened browser search for: ' + q;
+      }
+
+      renderSearchBubble(query, results, searchUrl) {
+        const wrap = document.createElement('div');
+        wrap.className = 'message ai';
+        const items = (results || []).slice(0, 6).map((item) => `
+          <a class="search-result" href="${this.escape(item.url || searchUrl || '#')}" target="_blank" rel="noopener noreferrer">
+            <strong>${this.escape(item.title || 'Result')}</strong>
+            <span>${this.escape(item.snippet || item.url || '')}</span>
+          </a>`).join('');
+        wrap.innerHTML = `
+          <div class="avatar">BD</div>
+          <div class="bubble">
+            <div>Search results for "${this.escape(query)}"</div>
+            <div class="search-results">${items || '<div style="color:var(--muted);">No direct results loaded.</div>'}</div>
+            <div class="image-actions"><a href="${this.escape(searchUrl || ('https://duckduckgo.com/?q=' + encodeURIComponent(query)))}" target="_blank" rel="noopener noreferrer">Open full search</a></div>
+            <div class="meta">${new Date().toLocaleTimeString()}</div>
+          </div>`;
+        $('chat').appendChild(wrap);
+        $('chat').scrollTop = $('chat').scrollHeight;
+      }
+
+      async imageResult(query) {
+        const images = await this.fetchCommonsImages(query);
+        this.renderImageBubble(query, images);
+        if (images.length) return 'I found images for: ' + query;
+        return 'I opened image search because I could not load direct image results for: ' + query;
+      }
+
+      generateImage(query) {
+        const prompt = safeText(query || 'black dragon cinematic art');
+        const seed = Math.floor(Math.random() * 1000000);
+        const url = 'https://gen.pollinations.ai/image/' + encodeURIComponent(prompt) + '?width=768&height=512&seed=' + seed + '&nologo=true';
+        const wrap = document.createElement('div');
+        wrap.className = 'message ai';
+        wrap.innerHTML = `
+          <div class="avatar">BD</div>
+          <div class="bubble">
+            <div>Generated image: "${this.escape(prompt)}"</div>
+            <img class="generated-image" src="${this.escape(url)}" alt="${this.escape(prompt)}" loading="lazy" onerror="this.closest('.bubble').querySelector('.image-error').style.display='block'; this.remove();">
+            <div class="image-error" style="display:none;color:var(--muted);margin-top:8px;">Image generation is busy. Try again or open image search.</div>
+            <div class="image-actions"><a href="${this.escape(url)}" target="_blank" rel="noopener noreferrer">Open image</a><a href="https://www.bing.com/images/search?q=${encodeURIComponent(prompt)}" target="_blank" rel="noopener noreferrer">Search images</a></div>
+            <div class="meta">${new Date().toLocaleTimeString()}</div>
+          </div>`;
+        $('chat').appendChild(wrap);
+        $('chat').scrollTop = $('chat').scrollHeight;
+        return 'Generated an image preview for: ' + prompt;
+      }
+
+      async fetchCommonsImages(query) {
+        try {
+          const res = await fetch(apiUrl('/images/search') + '?q=' + encodeURIComponent(query), { cache: 'no-store', headers: this.authHeaders() });
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.images) && data.images.length) return data.images;
+          }
+        } catch (error) {
+          console.warn('Backend image search failed', error);
+        }
+        const url = 'https://commons.wikimedia.org/w/api.php?' + new URLSearchParams({
+          action: 'query',
+          generator: 'search',
+          gsrsearch: query,
+          gsrnamespace: '6',
+          gsrlimit: '12',
+          prop: 'imageinfo',
+          iiprop: 'url|mime',
+          iiurlwidth: '640',
+          format: 'json',
+          origin: '*'
+        }).toString();
+        try {
+          const res = await fetch(url);
+          if (!res.ok) return [];
+          const data = await res.json();
+          return Object.values(data.query?.pages || {})
+            .map((page) => page.imageinfo?.[0])
+            .filter(Boolean)
+            .map((info) => ({
+              thumb: info.thumburl || info.url,
+              full: info.url,
+              mime: info.mime || ''
+            }))
+            .filter((img) => img.mime.startsWith('image/') || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(img.full))
+            .slice(0, 4);
+        } catch (error) {
+          console.warn('Image search failed', error);
+          return [];
+        }
+      }
+
+      renderImageBubble(query, images) {
+        const wrap = document.createElement('div');
+        wrap.className = 'message ai';
+        const encoded = encodeURIComponent(query);
+        const imageSearchUrl = 'https://www.bing.com/images/search?q=' + encoded;
+        const grid = images.length
+          ? `<div class="image-grid">${images.map((img) => `<a href="${img.full}" target="_blank" rel="noopener noreferrer"><img src="${img.thumb}" alt="${this.escape(query)}" loading="lazy" onerror="this.closest('a').remove()"></a>`).join('')}</div>`
+          : '<div style="color:var(--muted);margin-top:8px;">Direct image results did not load. Use the button below to open browser image search.</div>';
+        wrap.innerHTML = `
+          <div class="avatar">BD</div>
+          <div class="bubble">
+            <div>Images related to "${this.escape(query)}"</div>
+            ${grid}
+            <div class="image-actions"><a href="${imageSearchUrl}" target="_blank" rel="noopener noreferrer">Open image search</a></div>
+            <div class="meta">${new Date().toLocaleTimeString()}</div>
+          </div>`;
+        $('chat').appendChild(wrap);
+        $('chat').scrollTop = $('chat').scrollHeight;
+      }
+
+      openSearch(query) {
+        const q = encodeURIComponent(query || 'Black Dragon');
+        window.open('https://duckduckgo.com/?q=' + q, '_blank', 'noopener,noreferrer');
+      }
+
+      openAppOrSite(target) {
+        const cleanTarget = target.replace(/^(the\s+)?(app|website|site)\s+/i, '').replace(/\s+app$/i, '').trim();
+        const key = cleanTarget.toLowerCase();
+        const apps = {
+          youtube: 'https://www.youtube.com',
+          google: 'https://www.google.com',
+          gmail: 'https://mail.google.com',
+          'gmail signup': 'https://accounts.google.com/signup',
+          'google account': 'https://accounts.google.com/signup',
+          maps: 'https://maps.google.com',
+          drive: 'https://drive.google.com',
+          docs: 'https://docs.google.com',
+          sheets: 'https://sheets.google.com',
+          slides: 'https://slides.google.com',
+          instagram: 'https://www.instagram.com',
+          facebook: 'https://www.facebook.com',
+          whatsapp: 'https://web.whatsapp.com',
+          x: 'https://x.com',
+          twitter: 'https://x.com',
+          linkedin: 'https://www.linkedin.com',
+          reddit: 'https://www.reddit.com',
+          netflix: 'https://www.netflix.com',
+          prime: 'https://www.primevideo.com',
+          hotstar: 'https://www.hotstar.com',
+          disney: 'https://www.disneyplus.com',
+          spotify: 'spotify:',
+          discord: 'discord:',
+          telegram: 'tg://resolve',
+          slack: 'slack:',
+          teams: 'msteams:',
+          zoom: 'zoommtg:',
+          calculator: 'ms-calculator:',
+          settings: 'ms-settings:',
+          camera: 'microsoft.windows.camera:',
+          store: 'ms-windows-store:',
+          edge: 'microsoft-edge:https://www.bing.com',
+          word: 'ms-word:',
+          excel: 'ms-excel:',
+          powerpoint: 'ms-powerpoint:',
+          onenote: 'onenote:',
+          mail: 'mailto:',
+          calendar: 'https://calendar.google.com'
+        };
+        let url = apps[key] || apps[Object.keys(apps).find((k) => key.includes(k))];
+        if (!url && /^https?:\/\//i.test(cleanTarget)) url = cleanTarget;
+        if (!url && /^[\w.-]+\.[a-z]{2,}/i.test(cleanTarget)) url = 'https://' + cleanTarget;
+        if (url) {
+          window.open(url, '_blank');
+          return 'Opening ' + cleanTarget + '.';
+        }
+        this.openSearch(cleanTarget);
+        return 'I opened a browser search for "' + cleanTarget + '". If it is a desktop-only app, the browser may ask for permission or show install/open options.';
+      }
+
+      browserSearch() {
+        const q = prompt('Search for what?');
+        if (q) this.openSearch(q);
+      }
+
+      async imagePrompt() {
+        const q = prompt('Show image of what?');
+        if (q) this.addMessage(await this.imageResult(q), 'ai');
+      }
+
+      openAppPrompt() {
+        const q = prompt('Open which app or website?');
+        if (q) this.addMessage(this.openAppOrSite(q), 'ai');
+      }
+
+      toolPrompt(kind) {
+        const prompts = {
+          summarize: 'Summarize this clearly with key points and action items: ',
+          rewrite: 'Rewrite this to be clearer and more polished: ',
+          translate: 'Translate this to Hindi and keep the meaning natural: ',
+          code: 'Help me write code for this. Include the best approach and code: ',
+          debug: 'Debug this problem. Explain the likely cause and fix: ',
+          plan: 'Create a practical step-by-step plan for: ',
+          study: 'Teach me this topic simply, then quiz me: ',
+          compare: 'Compare these options with pros, cons, and the best choice: ',
+          table: 'Make a clear table for this information: ',
+          email: 'Write a professional email for this situation: ',
+          remember: 'Remember that ',
+          build: 'Act as a senior software builder. Turn this request into a production-ready implementation with: goal, files to change, exact code, edge cases, tests, and verification steps: ',
+          review: 'Review this like a senior engineer. Put bugs, security risks, regressions, and missing tests first. Then give a short fix plan: ',
+          fix: 'Find the root cause of this bug and give a minimal safe fix, test cases, and commands or steps to verify it: ',
+          tests: 'Write focused tests for this feature or bug. Cover success, failure, edge cases, and how to run them: ',
+          refactor: 'Refactor this safely. Preserve behavior, reduce complexity, explain the tradeoffs, and show the final code: ',
+          spec: 'Write a clear product spec with user goal, flows, screens, data, edge cases, security, metrics, and launch checklist: '
+        };
+        if (['build', 'review', 'fix', 'tests', 'refactor', 'spec', 'code', 'debug'].includes(kind)) {
+          this.state.mode = 'coding';
+          this.applyModeUi();
+          this.save();
+        }
+        $('userInput').value = prompts[kind] || '';
+        $('userInput').focus();
+        this.toggleMenu(false);
+      }
+
+      showMemory() {
+        if (!this.requireTerms()) return;
+        fetch(apiUrl('/memory') + '?userId=' + encodeURIComponent(this.userId), { headers: this.authHeaders() })
+          .then((res) => res.json())
+          .then((data) => {
+            const items = data.memories || [];
+            const text = items.length ? 'Memory:\n' + items.map((item, index) => `${index + 1}. ${item}`).join('\n') : 'I do not have any memory saved yet.';
+            this.addMessage(text, 'ai');
+          })
+          .catch(() => this.addMessage(this.memorySummary(), 'ai'));
+        this.toggleMenu(false);
+      }
+
+      async loadMemoryPanel() {
+        if (!this.requireTerms()) return;
+        const list = $('memoryList');
+        if (!list) return;
+        list.innerHTML = '<div class="hint">Loading memory...</div>';
+        try {
+          const res = await fetch(apiUrl('/memory') + '?userId=' + encodeURIComponent(this.userId), { cache: 'no-store', headers: this.authHeaders() });
+          const data = await res.json();
+          const items = data.memories || [];
+          list.innerHTML = items.length
+            ? items.map((item, index) => `<div class="secure-msg"><strong>Memory ${index + 1}</strong><div>${this.escape(item)}</div></div>`).join('')
+            : '<div class="hint">No saved memory yet.</div>';
+        } catch (error) {
+          list.innerHTML = '<div class="hint">Black Dragon core is not running.</div>';
+        }
+      }
+
+      async saveMemoryFromPanel() {
+        if (!this.requireTerms()) return;
+        const input = $('memoryInput');
+        const text = input?.value.trim() || '';
+        if (!text) return this.toast('Write a memory first.');
+        try {
+          const data = await this.backendPost('/api/memory/add', { userId: this.userId, text });
+          this.toast(data.message || 'Memory saved.');
+          input.value = '';
+          await this.loadMemoryPanel();
+        } catch (error) {
+          this.toast('Could not save memory.');
+        }
+      }
+
+      async showSystemStatus() {
+        try {
+          const res = await fetch(apiUrl('/monitor'), { cache: 'no-store', headers: this.authHeaders() });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            const health = await fetch(apiUrl('/health'), { cache: 'no-store', headers: this.authHeaders() });
+            const h = await health.json().catch(() => ({}));
+            this.addMessage(health.ok ? `Black Dragon is ready.\nAuth required: ${h.authRequired ? 'yes' : 'no'}\nBuild: ${h.build || 'current'}` : 'Black Dragon needs a restart.', 'ai');
+            return;
+          }
+          const latency = data.latency ? JSON.stringify(data.latency, null, 2) : 'No latency samples yet.';
+          const rate = data.rateLimit ? `${data.rateLimit.requests} requests / ${data.rateLimit.windowSeconds}s` : 'active';
+          this.addMessage(`Black Dragon monitor\nBuild: ${data.build || 'current'}\nRate limit: ${rate}\nChats: ${data.chats || 0}\nMemories: ${data.memories || 0}\nQueue: ${JSON.stringify(data.queue || {})}\nLatency:\n${latency}`, 'ai');
+        } catch (error) {
+          this.addMessage('Black Dragon core is not running. Start Black Dragon from the launcher.', 'ai');
+        }
+        this.toggleMenu(false);
+      }
+
+      policyUrl(kind) {
+        const path = kind === 'privacy' ? '/privacy' : '/terms';
+        if (BACKEND_BASE) return BACKEND_BASE + path;
+        if (SAME_ORIGIN_BACKEND) return path;
+        return HOSTED_BACKEND_FALLBACK + path;
+      }
+
+      openPolicy(kind) {
+        window.open(this.policyUrl(kind), '_blank', 'noopener,noreferrer');
+      }
+
+      clearMemory() {
+        if (!confirm('Clear Black Dragon local memory?')) return;
+        this.state.memory = [];
+        this.save();
+        fetch(apiUrl('/memory/clear'), {
+          method: 'POST',
+          headers: this.authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ userId: this.userId, ...this.termsPayload() })
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            this.addMessage(data.message || 'Memory cleared.', 'ai');
+            this.loadMemoryPanel();
+          })
+          .catch(() => this.addMessage('Local memory cleared. Black Dragon core was not reachable.', 'ai'));
+        this.toggleMenu(false);
+      }
+
+      triggerFilePicker() {
+        const picker = $('fileInput');
+        if (picker) picker.click();
+        this.toggleMenu(false);
+      }
+
+      async handleFiles(fileList) {
+        const files = Array.from(fileList || []);
+        if (!files.length) return;
+        for (const file of files) {
+          try {
+            this.toast('Scanning ' + file.name + '...');
+            const scanned = await this.scanFileBeforeAccept(file);
+            if (scanned?.accepted && scanned.file) {
+              this.attachments.push(scanned.file);
+              this.toast(file.name + ' scanned and accepted.');
+            } else {
+              this.toast(scanned?.message || (file.name + ' was blocked by scan.'));
+            }
+          } catch (error) {
+            this.toast('Could not scan ' + file.name + '.');
+          }
+        }
+        this.renderAttachments();
+      }
+
+      isTextFile(file) {
+        return file.type.startsWith('text/') || /\.(txt|md|json|csv|html|css|js|ts|jsx|tsx|py|java|c|cpp|cs|go|rs|rb|php|xml|yaml|yml|log)$/i.test(file.name);
+      }
+
+      async scanFileBeforeAccept(file) {
+        if (!this.requireTerms()) return null;
+        if (file.size > 25 * 1024 * 1024) {
+          return { accepted: false, message: file.name + ' is too large. Use files up to 25 MB.' };
+        }
+        const dataBase64 = await this.readFile(file, 'base64');
+        return this.backendPost('/api/file/scan', {
+          name: file.name,
+          mime: file.type || 'application/octet-stream',
+          size: file.size,
+          dataBase64
+        });
+      }
+
+      readFile(file, mode) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (mode === 'base64') {
+              const bytes = new Uint8Array(reader.result || new ArrayBuffer(0));
+              let binary = '';
+              const chunkSize = 32768;
+              for (let i = 0; i < bytes.length; i += chunkSize) {
+                binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+              }
+              resolve(btoa(binary));
+              return;
+            }
+            resolve(String(reader.result || ''));
+          };
+          reader.onerror = reject;
+          if (mode === 'dataURL') reader.readAsDataURL(file);
+          else if (mode === 'base64') reader.readAsArrayBuffer(file);
+          else reader.readAsText(file);
+        });
+      }
+
+      renderAttachments() {
+        const strip = $('attachmentStrip');
+        if (!strip) return;
+        strip.classList.toggle('show', this.attachments.length > 0);
+        strip.innerHTML = this.attachments.map((a, index) => `
+          <span class="attachment-chip" title="${this.escape(a.name)}">
+            <span>${a.kind === 'image' ? 'Image' : a.kind === 'text' ? 'Text' : 'Scanned file'}</span>
+            <strong>${this.escape(a.name)}</strong>
+            <button onclick="ai.removeAttachment(${index})" title="Remove attachment">x</button>
+          </span>`).join('');
+      }
+
+      removeAttachment(index) {
+        this.attachments.splice(index, 1);
+        this.renderAttachments();
+      }
+
+      clearAttachments(render = true) {
+        this.attachments = [];
+        if (render) this.renderAttachments();
+      }
+
+      lastAiText() {
+        return [...this.messages].reverse().find((m) => m.sender === 'ai')?.content || '';
+      }
+
+      copyLastAnswer() {
+        const text = this.lastAiText();
+        if (!text) return this.toast('No answer to copy yet.');
+        navigator.clipboard?.writeText(text)
+          .then(() => this.toast('Answer copied.'))
+          .catch(() => this.toast('Clipboard permission was blocked.'));
+        this.toggleMenu(false);
+      }
+
+      downloadLastAnswer() {
+        const text = this.lastAiText();
+        if (!text) return this.toast('No answer to download yet.');
+        const blob = new Blob([text], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'black-dragon-answer.txt';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        this.toggleMenu(false);
+      }
+
+      quick(text) {
+        $('userInput').value = text;
+        this.send();
+      }
+
+      toggleMenu(force) {
+        if (!this.requireTerms()) return;
+        const menu = $('toolMenu');
+        const show = typeof force === 'boolean' ? force : !menu.classList.contains('show');
+        menu.classList.toggle('show', show);
+      }
+
+      toggleSidebar() {
+        if (!this.requireTerms()) return;
+        this.state.sidebarVisible = !$('sidebar').classList.contains('hidden');
+        this.state.sidebarVisible = !this.state.sidebarVisible;
+        $('sidebar').classList.toggle('hidden', !this.state.sidebarVisible);
+        $('sidebarToggle').textContent = this.state.sidebarVisible ? 'x' : 'menu';
+      }
+
+      setMode(mode) {
+        this.state.mode = mode;
+        this.applyModeUi();
+        this.save();
+        this.toast('Mode: ' + mode);
+      }
+
+      applyModeUi() {
+        document.querySelectorAll('[data-mode]').forEach((b) => b.classList.toggle('active', b.dataset.mode === this.state.mode));
+      }
+
+      toggleVoice() {
+        this.state.voice = !this.state.voice;
+        this.updateVoiceUi();
+        this.save();
+      }
+
+      updateVoiceUi() {
+        $('voiceBtn').textContent = 'Voice out: ' + (this.state.voice ? 'On' : 'Off');
+        $('voiceBtn').classList.toggle('active', this.state.voice);
+        $('liveBtn').textContent = 'Live talk: ' + (this.state.liveTalk ? 'On' : 'Off');
+        $('liveBtn').classList.toggle('active', this.state.liveTalk);
+      }
+
+      speak(text) {
+        if (!window.speechSynthesis) return;
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text.replace(/[^\w\s.,!?'-]/g, ' '));
+        u.rate = 1;
+        u.pitch = .92;
+        speechSynthesis.speak(u);
+      }
+
+      stopSpeech() {
+        if (window.speechSynthesis) speechSynthesis.cancel();
+      }
+
+      toggleRecording() {
+        if (!this.requireTerms()) return;
+        if (!this.recognition) return this.toast('Voice input is not supported in this browser.');
+        this.startRecording();
+      }
+
+      startRecording() {
+        try {
+          this.recognition.start();
+          $('micButton').classList.add('primary');
+        } catch (error) {}
+      }
+
+      toggleLiveTalk() {
+        this.state.liveTalk = !this.state.liveTalk;
+        this.updateVoiceUi();
+        this.save();
+        if (this.state.liveTalk) this.startRecording();
+      }
+
+      testMic() {
+        if (!navigator.mediaDevices) return this.toast('Microphone test is not supported here.');
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then((stream) => {
+            stream.getTracks().forEach((t) => t.stop());
+            this.toast('Microphone is working.');
+          })
+          .catch(() => this.toast('Microphone permission was blocked.'));
+      }
+
+      openGameZone() {
+        if (!this.requireTerms()) return;
+        $('gameZone').classList.add('show');
+        games.start(games.type || 'flap');
+      }
+
+      closeGameZone() {
+        $('gameZone').classList.remove('show');
+      }
+
+      openMode(mode = 'pc') {
+        if (!this.requireTerms()) return;
+        $('modeZone').classList.add('show');
+        document.querySelectorAll('[data-mode-tab]').forEach((b) => b.classList.toggle('primary', b.dataset.modeTab === mode));
+        document.querySelectorAll('.mode-panel').forEach((p) => p.classList.remove('active'));
+        const panel = $(mode + 'Panel');
+        if (panel) panel.classList.add('active');
+        if (mode === 'draw') setTimeout(() => airDraw.resize(), 60);
+        if (mode === 'notes') setTimeout(() => { notes.resize(); notes.load(); }, 60);
+        if (mode === 'memory') setTimeout(() => this.loadMemoryPanel(), 60);
+        this.toggleMenu(false);
+      }
+
+      closeMode() {
+        $('modeZone').classList.remove('show');
+      }
+
+      async backendPost(path, payload = {}, requireAgreement = true) {
+        if (requireAgreement && !this.requireTerms()) return { ok: false, message: 'Please agree to the Terms and Privacy Policy first.' };
+        const res = await fetch(apiUrl(path), {
+          method: 'POST',
+          headers: this.authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ ...payload, ...this.termsPayload() })
+        });
+        return res.json();
+      }
+
+      async pcStatus() {
+        if (!this.requireTerms()) return;
+        this.openMode('pc');
+        try {
+          const res = await fetch(apiUrl('/pc/status'), { headers: this.authHeaders() });
+          const data = await res.json();
+          $('pcOutput').textContent = JSON.stringify(data.status || data, null, 2);
+        } catch (error) {
+          $('pcOutput').textContent = 'Backend is not running. Start it with start-backend.bat.';
+        }
+      }
+
+      async runPcCommand(command, silent = false) {
+        if (!this.requireTerms()) return 'Please agree to the Terms and Privacy Policy first.';
+        const value = command || $('pcCommand')?.value || '';
+        if (!value.trim()) return 'Type a PC command first.';
+        if (!silent) this.openMode('pc');
+        try {
+          const data = await this.backendPost('/api/pc/command', { command: value });
+          const text = data.message || JSON.stringify(data.data || data, null, 2);
+          if ($('pcOutput')) $('pcOutput').textContent = text;
+          return text;
+        } catch (error) {
+          const text = 'Backend is not running. Start it with start-backend.bat.';
+          if ($('pcOutput')) $('pcOutput').textContent = text;
+          return text;
+        }
+      }
+
+      async scanPc(target) {
+        if (!this.requireTerms()) return;
+        this.openMode('pc');
+        const value = target || $('scanTarget')?.value || 'quick';
+        $('pcOutput').textContent = 'Starting scan...';
+        try {
+          const data = await this.backendPost('/api/antivirus/scan', { target: value });
+          const status = data.defenderStatus ? '\n\nDefender status:\n' + JSON.stringify(data.defenderStatus, null, 2) : '';
+          $('pcOutput').textContent = data.message + status + (data.findings ? '\n\n' + JSON.stringify(data.findings, null, 2) : '');
+        } catch (error) {
+          $('pcOutput').textContent = 'Scan failed. Make sure the backend is running.';
+        }
+      }
+
+      async coolingMode(applyBalanced = false) {
+        if (!this.requireTerms()) return;
+        this.openMode('pc');
+        $('pcOutput').textContent = applyBalanced ? 'Applying safe cooling mode...' : 'Checking PC cooling status...';
+        try {
+          const data = await this.backendPost('/api/pc/cooling', { applyBalanced });
+          const top = (data.topProcesses || []).map((p) => `${p.name}  PID:${p.pid}  CPU:${p.cpuSeconds}s  RAM:${p.memoryMb}MB`).join('\n');
+          const recs = (data.recommendations || []).map((x) => '- ' + x).join('\n');
+          $('pcOutput').textContent = `${data.message || 'Cooling check complete.'}\n\nPower plan: ${data.activePowerPlan || 'Unknown'}\nBalanced applied: ${data.appliedBalancedPower ? 'yes' : 'no'}\n\nTop CPU/RAM processes:\n${top || 'No process data available.'}\n\nRecommendations:\n${recs}`;
+        } catch (error) {
+          $('pcOutput').textContent = 'Cooling check failed. Make sure the backend is running.';
+        }
+      }
+
+      async scanCleanup() {
+        if (!this.requireTerms()) return;
+        this.openMode('pc');
+        $('pcOutput').textContent = 'Scanning safe cleanup candidates...';
+        try {
+          const data = await this.backendPost('/api/pc/cleanup/scan', {});
+          const sample = (data.candidates || []).slice(0, 20).map((item) => `${item.sizeMb} MB  ${item.path}`).join('\n');
+          $('pcOutput').textContent = `${data.message}\n\nTop files:\n${sample || 'No cleanup candidates found.'}`;
+        } catch (error) {
+          $('pcOutput').textContent = 'Cleanup scan failed. Make sure the backend is running.';
+        }
+      }
+
+      async deleteCleanup() {
+        if (!this.requireTerms()) return;
+        this.openMode('pc');
+        if (!confirm('Delete only safe temporary/cache cleanup files found by Black Dragon?')) return;
+        $('pcOutput').textContent = 'Deleting safe temp/cache files...';
+        try {
+          const data = await this.backendPost('/api/pc/cleanup/delete', { confirm: true });
+          $('pcOutput').textContent = data.message + (data.errors?.length ? '\n\nSkipped:\n' + data.errors.join('\n') : '');
+        } catch (error) {
+          $('pcOutput').textContent = 'Cleanup delete failed. Make sure the backend is running.';
+        }
+      }
+
+      exportChats() {
+        const blob = new Blob([JSON.stringify(this.chats, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'black-dragon-chats.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+
+      resetAll() {
+        if (!confirm('Delete chats and settings?')) return;
+        localStorage.removeItem('blackDragonData');
+        location.reload();
+      }
+
+      save() {
+        try {
+          const savedState = {
+            voice: this.state.voice,
+            liveTalk: this.state.liveTalk,
+            mode: this.state.mode,
+            memory: Array.isArray(this.state.memory) ? this.state.memory.slice(-40) : [],
+            conversationMemory: safeText(this.state.conversationMemory || '').slice(-1400),
+            learningFacts: Array.isArray(this.state.learningFacts) ? this.state.learningFacts.slice(-40) : [],
+            lastLearningTurn: this.state.lastLearningTurn || 0
+          };
+          localStorage.setItem('blackDragonData', JSON.stringify({
+            chats: this.chats.map((c) => ({ ...c, messages: (c.messages || []).slice(-140) })),
+            state: savedState
+          }));
+        } catch (error) {}
+      }
+
+      load() {
+        try {
+          const data = JSON.parse(localStorage.getItem('blackDragonData'));
+          if (!data) return;
+          this.chats = data.chats || [];
+          this.state = { ...this.state, ...(data.state || {}) };
+          this.state.memory = Array.isArray(this.state.memory) ? this.state.memory : [];
+          this.state.learningFacts = Array.isArray(this.state.learningFacts) ? this.state.learningFacts : [];
+          this.state.conversationMemory = safeText(this.state.conversationMemory || '').slice(-1400);
+          this.state.processing = false;
+        } catch (error) {}
+      }
+
+      toast(text) {
+        const n = document.createElement('div');
+        n.className = 'notice';
+        n.textContent = text;
+        document.body.appendChild(n);
+        setTimeout(() => n.remove(), 2300);
+      }
+
+      escape(s) {
+        return String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      }
+    }
+
+    class AirDraw3D {
+      constructor() {
+        this.drawCanvas = $('drawCanvas');
+        this.viewCanvas = $('viewCanvas');
+        this.strokes = [];
+        this.current = null;
+        this.lastStrokes = [];
+        this.model = null;
+        this.scene = null;
+        this.angle = 0;
+        this.raf = 0;
+        this.convertTimer = 0;
+        if (!this.drawCanvas || !this.viewCanvas) return;
+        this.drawCtx = this.drawCanvas.getContext('2d');
+        this.viewCtx = this.viewCanvas.getContext('2d');
+        this.bind();
+        this.clear();
+      }
+
+      bind() {
+        this.drawCanvas.addEventListener('pointerdown', (event) => {
+          this.current = [this.point(event)];
+          this.drawCanvas.setPointerCapture(event.pointerId);
+        });
+        this.drawCanvas.addEventListener('pointermove', (event) => {
+          if (!this.current) return;
+          this.current.push(this.point(event));
+          this.render2d();
+        });
+        this.drawCanvas.addEventListener('pointerup', () => {
+          if (this.current?.length) this.strokes.push(this.current);
+          this.current = null;
+          this.convert();
+        });
+        this.drawCanvas.addEventListener('pointercancel', () => {
+          if (this.current?.length) this.strokes.push(this.current);
+          this.current = null;
+          this.convert();
+        });
+        this.drawCanvas.addEventListener('pointerleave', () => {
+          if (!this.current) return;
+          this.strokes.push(this.current);
+          this.current = null;
+          this.convert();
+        });
+      }
+
+      point(event) {
+        const rect = this.drawCanvas.getBoundingClientRect();
+        return {
+          x: (event.clientX - rect.left) * (this.drawCanvas.width / rect.width),
+          y: (event.clientY - rect.top) * (this.drawCanvas.height / rect.height)
+        };
+      }
+
+      clear() {
+        cancelAnimationFrame(this.raf);
+        clearTimeout(this.convertTimer);
+        this.strokes = [];
+        this.current = null;
+        this.lastStrokes = [];
+        this.model = null;
+        this.scene = null;
+        if ($('airOutput')) $('airOutput').textContent = 'Air Canvas ready. Draw, upload an image, or describe an environment.';
+        this.render2d();
+        this.render3d([]);
+      }
+
+      resize() {
+        this.render2d();
+        this.convert();
+      }
+
+      render2d() {
+        const c = this.drawCtx;
+        c.clearRect(0, 0, this.drawCanvas.width, this.drawCanvas.height);
+        c.fillStyle = '#050b0d';
+        c.fillRect(0, 0, this.drawCanvas.width, this.drawCanvas.height);
+        const glow = c.createRadialGradient(this.drawCanvas.width * .5, this.drawCanvas.height * .42, 10, this.drawCanvas.width * .5, this.drawCanvas.height * .42, this.drawCanvas.width * .72);
+        glow.addColorStop(0, 'rgba(53,246,163,.10)');
+        glow.addColorStop(1, 'rgba(0,0,0,0)');
+        c.fillStyle = glow;
+        c.fillRect(0, 0, this.drawCanvas.width, this.drawCanvas.height);
+        c.strokeStyle = 'rgba(255,255,255,.06)';
+        c.lineWidth = 1;
+        for (let x = 0; x < this.drawCanvas.width; x += 36) {
+          c.beginPath(); c.moveTo(x, 0); c.lineTo(x, this.drawCanvas.height); c.stroke();
+        }
+        for (let y = 0; y < this.drawCanvas.height; y += 36) {
+          c.beginPath(); c.moveTo(0, y); c.lineTo(this.drawCanvas.width, y); c.stroke();
+        }
+        c.shadowColor = 'rgba(53,246,163,.75)';
+        c.shadowBlur = 10;
+        c.strokeStyle = '#35f6a3';
+        c.lineWidth = 6;
+        c.lineCap = 'round';
+        c.lineJoin = 'round';
+        [...this.strokes, this.current].filter(Boolean).forEach((stroke) => this.path(c, stroke));
+        c.shadowBlur = 0;
+      }
+
+      convert() {
+        const strokes = [...this.strokes, this.current].filter(Boolean);
+        this.lastStrokes = strokes;
+        const prompt = $('airPrompt')?.value || '';
+        if (strokes.length) {
+          this.model = null;
+          this.scene = null;
+          cancelAnimationFrame(this.raf);
+          this.animate3d();
+        }
+        clearTimeout(this.convertTimer);
+        if (strokes.length && window.ai?.termsAccepted?.()) {
+          this.convertTimer = setTimeout(() => this.enhanceStrokes(strokes, prompt), 220);
+        }
+        if (!strokes.length) this.render3d([]);
+      }
+
+      async enhanceStrokes(strokes, prompt) {
+        try {
+          if ($('airOutput')) $('airOutput').textContent = 'Enhancing 2D drawing into a 3D hologram...';
+          const data = await ai.backendPost('/api/air/shape-to-3d', { strokes, prompt });
+          if (data.ok && data.model) {
+            this.model = data.model;
+            this.scene = null;
+            if ($('airOutput')) $('airOutput').textContent = `3D model ready: ${data.model.recognized}. Objects: ${data.model.objects?.length || 0}.`;
+          }
+        } catch (error) {
+          if ($('airOutput')) $('airOutput').textContent = 'Live local extrusion is active. Backend enhancement was skipped.';
+        }
+      }
+
+      pickImage() {
+        $('airImageInput')?.click();
+      }
+
+      async imageTo3d(file) {
+        if (!file) return;
+        if (!window.ai?.requireTerms?.()) return;
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        try {
+          if ($('airOutput')) $('airOutput').textContent = 'Creating image relief 3D blockout...';
+          const data = await ai.backendPost('/api/air/image-to-3d', {
+            name: file.name,
+            mime: file.type || 'image/png',
+            dataUrl,
+            prompt: $('airPrompt')?.value || file.name
+          });
+          if (data.ok && data.model) {
+            this.model = data.model;
+            this.scene = null;
+            this.lastStrokes = [];
+            cancelAnimationFrame(this.raf);
+            this.animate3d();
+            if ($('airOutput')) $('airOutput').textContent = `Image model ready: ${data.model.recognized}.`;
+          }
+        } catch (error) {
+          if ($('airOutput')) $('airOutput').textContent = 'Image to 3D failed. Check backend.';
+        }
+      }
+
+      async makeEnvironment() {
+        if (!window.ai?.requireTerms?.()) return;
+        const description = $('airPrompt')?.value || 'creative test environment';
+        try {
+          if ($('airOutput')) $('airOutput').textContent = 'Building 3D environment...';
+          const data = await ai.backendPost('/api/air/environment', { description, model: this.model });
+          if (data.ok && data.scene) {
+            this.scene = data.scene;
+            cancelAnimationFrame(this.raf);
+            this.animate3d();
+            if ($('airOutput')) $('airOutput').textContent = `Environment ready: ${data.scene.type}. Objects: ${data.scene.objects?.length || 0}.`;
+          }
+        } catch (error) {
+          if ($('airOutput')) $('airOutput').textContent = 'Environment build failed. Check backend.';
+        }
+      }
+
+      exportObj() {
+        const obj = this.model?.obj;
+        if (!obj) return ai.toast('Create a 3D model first.');
+        const blob = new Blob([obj], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'black-dragon-air-model.obj';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+
+      animate3d() {
+        this.angle += 0.018;
+        this.render3d(this.lastStrokes);
+        if (this.lastStrokes.length || this.model || this.scene) this.raf = requestAnimationFrame(() => this.animate3d());
+      }
+
+      render3d(strokes) {
+        const c = this.viewCtx;
+        c.clearRect(0, 0, this.viewCanvas.width, this.viewCanvas.height);
+        const w = this.viewCanvas.width;
+        const h = this.viewCanvas.height;
+        const bg = c.createLinearGradient(0, 0, w, h);
+        bg.addColorStop(0, '#020707');
+        bg.addColorStop(.45, '#071912');
+        bg.addColorStop(1, '#05070d');
+        c.fillStyle = bg;
+        c.fillRect(0, 0, w, h);
+        c.fillStyle = 'rgba(53,246,163,.035)';
+        for (let y = 0; y < h; y += 7) c.fillRect(0, y, w, 1);
+        c.save();
+        c.translate(w / 2, h * .62);
+        c.strokeStyle = 'rgba(53,246,163,.14)';
+        c.lineWidth = 1;
+        for (let r = 90; r <= 420; r += 55) {
+          c.beginPath();
+          c.ellipse(0, 0, r, r * .28, 0, 0, Math.PI * 2);
+          c.stroke();
+        }
+        for (let a = 0; a < Math.PI * 2; a += Math.PI / 12) {
+          c.beginPath();
+          c.moveTo(Math.cos(a) * 55, Math.sin(a) * 18);
+          c.lineTo(Math.cos(a) * 430, Math.sin(a) * 122);
+          c.stroke();
+        }
+        c.restore();
+        if (this.scene || this.model) {
+          this.renderSceneModel(c, w, h);
+          return;
+        }
+        if (!strokes.length) {
+          this.renderDemoHologram(c, w, h);
+          c.fillStyle = '#9aabb0';
+          c.font = '18px system-ui';
+          c.fillText('Draw, upload image, or build an environment.', 30, 48);
+          return;
+        }
+        const depth = 78;
+        const pulse = .55 + Math.sin(this.angle * 4) * .18;
+        const yaw = Math.sin(this.angle) * 32;
+        const cx = w / 2;
+        const cy = h / 2;
+        const project = (p, d) => {
+          const sx = p.x - this.drawCanvas.width / 2;
+          const sy = p.y - this.drawCanvas.height / 2;
+          const z = d / depth;
+          return {
+            x: cx + sx * (0.82 + z * .18) + yaw * z,
+            y: cy + sy * .82 - d * .55 + Math.cos(this.angle + z) * 5,
+          };
+        };
+        c.shadowColor = 'rgba(53,246,163,.9)';
+        c.shadowBlur = 18;
+        for (let d = depth; d >= 0; d -= 8) {
+          c.strokeStyle = d ? `rgba(143,124,255,${0.14 + d / 350})` : `rgba(53,246,163,${pulse})`;
+          c.lineWidth = d ? 4 : 8;
+          c.lineCap = 'round';
+          c.lineJoin = 'round';
+          strokes.forEach((stroke) => this.path(c, stroke.map((p) => project(p, d))));
+        }
+        c.shadowBlur = 0;
+        c.strokeStyle = 'rgba(255,209,102,.9)';
+        c.lineWidth = 2;
+        strokes.forEach((stroke) => {
+          stroke.filter((_, i) => i % 8 === 0).forEach((p) => {
+            const a = project(p, 0);
+            const b = project(p, depth);
+            c.beginPath();
+            c.moveTo(a.x, a.y);
+            c.lineTo(b.x, b.y);
+            c.stroke();
+          });
+        });
+        c.fillStyle = 'rgba(53,246,163,.92)';
+        c.font = '12px system-ui';
+        c.fillText('AIR CANVAS 3D', 28, 28);
+      }
+
+      renderDemoHologram(c, w, h) {
+        const cx = w / 2;
+        const cy = h * .56;
+        const t = this.angle || .8;
+        const points = [
+          [-90, -70, -70], [90, -70, -70], [90, 70, -70], [-90, 70, -70],
+          [-90, -70, 70], [90, -70, 70], [90, 70, 70], [-90, 70, 70]
+        ].map(([x, y, z]) => {
+          const rx = x * Math.cos(t) - z * Math.sin(t);
+          const rz = x * Math.sin(t) + z * Math.cos(t);
+          return { x: cx + rx + rz * .22, y: cy + y - rz * .18 };
+        });
+        const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+        c.save();
+        c.shadowBlur = 18;
+        edges.forEach(([a, b], i) => {
+          c.strokeStyle = i % 3 === 0 ? '#8f7cff' : i % 3 === 1 ? '#35f6a3' : '#ffd166';
+          c.shadowColor = c.strokeStyle;
+          c.lineWidth = 3;
+          c.beginPath();
+          c.moveTo(points[a].x, points[a].y);
+          c.lineTo(points[b].x, points[b].y);
+          c.stroke();
+        });
+        c.fillStyle = 'rgba(53,246,163,.08)';
+        c.beginPath();
+        points.slice(4).forEach((p, i) => i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y));
+        c.closePath();
+        c.fill();
+        c.restore();
+      }
+
+      renderSceneModel(c, w, h) {
+        const objects = this.scene?.objects || this.model?.objects || [];
+        const cx = w / 2;
+        const cy = h * .64;
+        const yaw = Math.sin(this.angle) * .55;
+        const project = (x = 0, y = 0, z = 0) => ({
+          x: cx + x * Math.cos(yaw) + z * Math.sin(yaw) * .42,
+          y: cy - y - z * .28 + x * Math.sin(yaw) * .08
+        });
+        c.fillStyle = 'rgba(53,246,163,.92)';
+        c.font = '12px system-ui';
+        c.fillText((this.scene?.type || this.model?.recognized || 'AIR MODEL').toUpperCase(), 28, 28);
+        objects.forEach((obj, index) => {
+          if (obj.kind === 'modelRef' && obj.model?.objects) {
+            obj.model.objects.forEach((child) => this.drawObject(c, child, project, index + 1));
+          } else {
+            this.drawObject(c, obj, project, index);
+          }
+        });
+      }
+
+      drawObject(c, obj, project, index = 0) {
+        const color = obj.color || (index % 2 ? '#8f7cff' : '#35f6a3');
+        c.strokeStyle = color;
+        c.fillStyle = color + '55';
+        c.lineWidth = 2;
+        c.shadowColor = color;
+        c.shadowBlur = 12;
+        if (obj.kind === 'extrudedStroke') {
+          const depth = obj.depth || 72;
+          const points = obj.points || [];
+          [0, depth].forEach((z) => {
+            c.beginPath();
+            points.forEach((p, i) => {
+              const q = project((p.x || 0) - 360, 270 - (p.y || 0), z - depth / 2);
+              if (i) c.lineTo(q.x, q.y); else c.moveTo(q.x, q.y);
+            });
+            c.stroke();
+          });
+          points.filter((_, i) => i % 18 === 0).forEach((p) => {
+            const a = project((p.x || 0) - 360, 270 - (p.y || 0), -depth / 2);
+            const b = project((p.x || 0) - 360, 270 - (p.y || 0), depth / 2);
+            c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke();
+          });
+          return;
+        }
+        const x = obj.x || 0, z = obj.z || 0, ww = obj.w || (obj.r || 40) * 2, dd = obj.d || (obj.r || 40) * 2, hh = obj.h || 80;
+        if (obj.kind === 'target') {
+          const p = project(x, hh, z);
+          c.beginPath(); c.arc(p.x, p.y, obj.r || 40, 0, Math.PI * 2); c.stroke();
+          c.beginPath(); c.arc(p.x, p.y, (obj.r || 40) * .45, 0, Math.PI * 2); c.stroke();
+          return;
+        }
+        if (obj.kind === 'light') {
+          const p = project(x, obj.h || 180, z);
+          const glow = c.createRadialGradient(p.x, p.y, 0, p.x, p.y, 90);
+          glow.addColorStop(0, color + 'aa');
+          glow.addColorStop(1, 'rgba(0,0,0,0)');
+          c.fillStyle = glow;
+          c.beginPath(); c.arc(p.x, p.y, 90, 0, Math.PI * 2); c.fill();
+          c.fillStyle = color;
+          c.beginPath(); c.arc(p.x, p.y, 8, 0, Math.PI * 2); c.fill();
+          return;
+        }
+        if (obj.kind === 'cylinder') {
+          const top = project(x, hh, z);
+          const bottom = project(x, 0, z);
+          const r = obj.r || 32;
+          c.beginPath(); c.ellipse(top.x, top.y, r, r * .35, 0, 0, Math.PI * 2); c.stroke();
+          c.beginPath(); c.ellipse(bottom.x, bottom.y, r, r * .35, 0, 0, Math.PI * 2); c.stroke();
+          c.beginPath(); c.moveTo(top.x - r, top.y); c.lineTo(bottom.x - r, bottom.y); c.moveTo(top.x + r, top.y); c.lineTo(bottom.x + r, bottom.y); c.stroke();
+          return;
+        }
+        const corners = [
+          project(x - ww / 2, 0, z - dd / 2), project(x + ww / 2, 0, z - dd / 2),
+          project(x + ww / 2, 0, z + dd / 2), project(x - ww / 2, 0, z + dd / 2),
+          project(x - ww / 2, hh, z - dd / 2), project(x + ww / 2, hh, z - dd / 2),
+          project(x + ww / 2, hh, z + dd / 2), project(x - ww / 2, hh, z + dd / 2),
+        ];
+        const faces = [
+          [0, 1, 2, 3, '22'],
+          [4, 5, 6, 7, '55'],
+          [1, 5, 6, 2, '38'],
+          [3, 7, 4, 0, '2c'],
+        ];
+        faces.forEach((face) => {
+          c.fillStyle = color + face[4];
+          c.beginPath();
+          face.slice(0, 4).forEach((idx, i) => i ? c.lineTo(corners[idx].x, corners[idx].y) : c.moveTo(corners[idx].x, corners[idx].y));
+          c.closePath();
+          c.fill();
+        });
+        const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+        edges.forEach(([a,b]) => { c.beginPath(); c.moveTo(corners[a].x, corners[a].y); c.lineTo(corners[b].x, corners[b].y); c.stroke(); });
+        c.shadowBlur = 0;
+      }
+
+      path(ctx, stroke) {
+        if (!stroke.length) return;
+        ctx.beginPath();
+        ctx.moveTo(stroke[0].x, stroke[0].y);
+        stroke.slice(1).forEach((p) => ctx.lineTo(p.x, p.y));
+        ctx.stroke();
+      }
+    }
+
+    class NotesPad {
+      constructor() {
+        this.canvas = $('noteCanvas');
+        this.points = [];
+        this.current = null;
+        if (!this.canvas) return;
+        this.ctx = this.canvas.getContext('2d');
+        this.bind();
+        this.clearDrawing();
+      }
+
+      bind() {
+        this.canvas.addEventListener('pointerdown', (event) => {
+          this.current = [this.point(event)];
+          this.canvas.setPointerCapture(event.pointerId);
+        });
+        this.canvas.addEventListener('pointermove', (event) => {
+          if (!this.current) return;
+          this.current.push(this.point(event));
+          this.draw();
+        });
+        this.canvas.addEventListener('pointerup', () => {
+          if (this.current?.length) this.points.push(this.current);
+          this.current = null;
+          this.draw();
+        });
+      }
+
+      point(event) {
+        const rect = this.canvas.getBoundingClientRect();
+        return {
+          x: (event.clientX - rect.left) * (this.canvas.width / rect.width),
+          y: (event.clientY - rect.top) * (this.canvas.height / rect.height)
+        };
+      }
+
+      resize() {
+        this.draw();
+      }
+
+      clearDrawing() {
+        this.points = [];
+        this.current = null;
+        this.draw();
+      }
+
+      draw() {
+        const c = this.ctx;
+        if (!c) return;
+        c.fillStyle = '#061016';
+        c.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        c.strokeStyle = 'rgba(53,246,163,.12)';
+        c.lineWidth = 1;
+        for (let x = 0; x < this.canvas.width; x += 32) {
+          c.beginPath(); c.moveTo(x, 0); c.lineTo(x, this.canvas.height); c.stroke();
+        }
+        for (let y = 0; y < this.canvas.height; y += 32) {
+          c.beginPath(); c.moveTo(0, y); c.lineTo(this.canvas.width, y); c.stroke();
+        }
+        c.strokeStyle = '#ffd166';
+        c.lineWidth = 5;
+        c.lineCap = 'round';
+        c.lineJoin = 'round';
+        [...this.points, this.current].filter(Boolean).forEach((stroke) => {
+          c.beginPath();
+          c.moveTo(stroke[0].x, stroke[0].y);
+          stroke.slice(1).forEach((p) => c.lineTo(p.x, p.y));
+          c.stroke();
+        });
+      }
+
+      async save() {
+        const title = $('noteTitle')?.value?.trim() || 'Black Dragon Note';
+        const text = $('noteText')?.value?.trim() || '';
+        const hasDrawing = this.points.length > 0 || this.current;
+        const drawing = hasDrawing ? this.canvas.toDataURL('image/png') : '';
+        if (!text && !drawing) return ai.toast('Write or draw a note first.');
+        const res = await fetch(apiUrl('/notes/save'), {
+          method: 'POST',
+          headers: ai.authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ userId: ai.userId, title, text, drawing, ...ai.termsPayload() })
+        });
+        const data = await res.json();
+        ai.toast(data.message || 'Note saved.');
+        $('noteText').value = '';
+        await this.load();
+      }
+
+      async load() {
+        const list = $('notesList');
+        if (!list) return;
+        try {
+          const res = await fetch(apiUrl('/notes') + '?userId=' + encodeURIComponent(ai.userId), { headers: ai.authHeaders() });
+          const data = await res.json();
+          list.innerHTML = (data.notes || []).map((n) => `
+            <div class="secure-msg">
+              <strong>${ai.escape(n.title)}</strong>
+              <div>${ai.escape(n.text || '')}</div>
+              ${n.drawing ? `<img alt="drawing note" src="${n.drawing}" style="width:100%;max-height:160px;object-fit:contain;margin-top:8px;border:1px solid var(--line);border-radius:8px;">` : ''}
+              <small>${ai.escape(n.created_at || '')}</small>
+            </div>`).join('') || '<div class="hint">No notes yet.</div>';
+        } catch (error) {
+          list.innerHTML = '<div class="hint">Backend is not running.</div>';
+        }
+      }
+    }
+
+    class DragonGames {
+      constructor() {
+        this.canvas = $('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.type = 'flap';
+        this.keys = {};
+        this.controls = {};
+        this.pointer = false;
+        this.pointerX = null;
+        this.pointerY = null;
+        this.pointerStart = null;
+        this.running = false;
+        this.effects = [];
+        this.palette = { green: '#35f6a3', gold: '#ffd166', violet: '#8f7cff', red: '#ff4f64', ink: '#061016' };
+        try {
+          this.bestByType = JSON.parse(localStorage.getItem('blackDragonGameBestByType')) || {};
+        } catch (error) {
+          this.bestByType = {};
+        }
+        addEventListener('keydown', (e) => {
+          if ($('gameZone')?.classList.contains('show') && [' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
+          this.keys[e.key.toLowerCase()] = true;
+          if (e.key === ' ') this.action();
+        });
+        addEventListener('keyup', (e) => { this.keys[e.key.toLowerCase()] = false; });
+        this.canvas.addEventListener('pointerdown', (event) => { const p = this.canvasPoint(event); this.pointer = true; this.pointerX = p.x; this.pointerY = p.y; this.pointerStart = p; this.action(); });
+        this.canvas.addEventListener('pointermove', (event) => { if (this.pointer) { const p = this.canvasPoint(event); this.pointerX = p.x; this.pointerY = p.y; } });
+        this.canvas.addEventListener('pointerup', (event) => { this.handlePointerUp(event); });
+        this.canvas.addEventListener('pointercancel', () => { this.pointer = false; this.pointerX = null; this.pointerY = null; this.pointerStart = null; });
+      }
+
+      canvasPoint(event) {
+        const rect = this.canvas.getBoundingClientRect();
+        return {
+          x: (event.clientX - rect.left) * (this.canvas.width / rect.width),
+          y: (event.clientY - rect.top) * (this.canvas.height / rect.height)
+        };
+      }
+
+      pressControl(name) {
+        this.controls[name] = true;
+        if (name === 'gas' || name === 'fire') this.action();
+      }
+
+      releaseControl(name) {
+        this.controls[name] = false;
+      }
+
+      handlePointerUp(event) {
+        const end = this.canvasPoint(event);
+        if (this.type === 'snake' && this.pointerStart) {
+          const dx = end.x - this.pointerStart.x;
+          const dy = end.y - this.pointerStart.y;
+          if (Math.max(Math.abs(dx), Math.abs(dy)) > 24) {
+            const s = this.state;
+            if (Math.abs(dx) > Math.abs(dy)) s.next = dx > 0 && s.dir !== 'left' ? 'right' : dx < 0 && s.dir !== 'right' ? 'left' : s.next;
+            else s.next = dy > 0 && s.dir !== 'up' ? 'down' : dy < 0 && s.dir !== 'down' ? 'up' : s.next;
+          }
+        }
+        this.pointer = false;
+        this.pointerX = null;
+        this.pointerY = null;
+        this.pointerStart = null;
+      }
+
+      start(type) {
+        this.type = type;
+        $('gameZone')?.setAttribute('data-game', type);
+        document.querySelectorAll('.game-btn').forEach((b) => b.classList.remove('primary'));
+        const labels = { flap: 'Flap Dragon', race: 'Dragon Race', space: 'Space Shooter', snake: 'Feed Dragon', catch: 'Dragon Catch', breaker: 'Crystal Breaker', pong: 'Dragon Pong' };
+        const helps = {
+          flap: 'Space, click, or tap to flap. Dodge bamboo towers and collect gold orbs.',
+          race: 'Use Left/Right or A/D to steer. Hold Gas to go faster, Brake to slow down. Dodge traffic and collect boosts.',
+          space: 'Use Arrow Left/Right, A/D, or drag. Space/click/tap fires plasma.',
+          snake: 'Use Arrow keys or W/A/S/D. Eat the fire fruit and protect the dragon head.',
+          catch: 'Use Arrow Left/Right, A/D, or drag. Catch gold gems and avoid red fire.',
+          breaker: 'Move with A/D, Arrow keys, or drag. Break all crystals with the energy ball.',
+          pong: 'Use W/S, Arrow Up/Down, or drag. Beat the auto paddle.'
+        };
+        [...document.querySelectorAll('.game-btn')].find((b) => b.textContent === labels[type])?.classList.add('primary');
+        $('gameTitle').textContent = labels[type];
+        $('gameHelp').textContent = helps[type] || helps.flap;
+        this.updateBestLabel();
+        this.restart();
+      }
+
+      restart() {
+        cancelAnimationFrame(this.raf);
+        this.score = 0;
+        this.frame = 0;
+        this.effects = [];
+        this.running = true;
+        if (this.type === 'flap') this.state = { x: 135, r: 22, y: 260, vy: 0, pipes: [{ x: 930, gap: 228, top: 150, orb: true }], clouds: [] };
+        if (this.type === 'race') this.state = { x: 480, steer: 0, speed: 6.5, maxSpeed: 15, road: 0, traffic: [], boosts: [], distance: 0, gear: 1, damage: 0, invincible: 45 };
+        if (this.type === 'space') this.state = { x: 480, bullets: [], rocks: [], cool: 0, stars: [] };
+        if (this.type === 'snake') {
+          const snake = [{ x: 8, y: 8 }, { x: 7, y: 8 }, { x: 6, y: 8 }];
+          this.state = { dir: 'right', next: 'right', snake, food: this.placeSnakeFood(snake), tick: 0 };
+        }
+        if (this.type === 'catch') this.state = { x: 480, gems: [], fire: [], shield: 0 };
+        if (this.type === 'breaker') this.state = { paddleX: 480, ball: { x: 480, y: 486, vx: 0, vy: 0, stuck: true }, bricks: this.makeBricks(), level: 1, lives: 3 };
+        if (this.type === 'pong') this.state = { playerY: 300, aiY: 300, ball: { x: 480, y: 300, vx: 6, vy: 3.5 }, player: 0, ai: 0 };
+        this.updateBestLabel();
+        this.loop();
+      }
+
+      action() {
+        if (!this.running) return this.restart();
+        if (this.type === 'flap') {
+          this.state.vy = -8.7;
+          this.pop(this.state.x - 18, this.state.y + 16, this.palette.green, 4);
+        }
+        if (this.type === 'space' && this.state.cool <= 0) {
+          this.state.bullets.push({ x: this.state.x, y: 500 });
+          this.state.bullets.push({ x: this.state.x - 16, y: 512 });
+          this.state.bullets.push({ x: this.state.x + 16, y: 512 });
+          this.state.cool = 10;
+        }
+        if (this.type === 'breaker' && this.state.ball.stuck) {
+          this.state.ball.stuck = false;
+          this.state.ball.vx = 4.8;
+          this.state.ball.vy = -7.2;
+        }
+      }
+
+      loop() {
+        this.update();
+        this.draw();
+        if (this.running) this.raf = requestAnimationFrame(() => this.loop());
+      }
+
+      update() {
+        this.frame++;
+        if (this.type === 'flap') this.updateFlap();
+        if (this.type === 'race') this.updateRace();
+        if (this.type === 'space') this.updateSpace();
+        if (this.type === 'snake') this.updateSnake();
+        if (this.type === 'catch') this.updateCatch();
+        if (this.type === 'breaker') this.updateBreaker();
+        if (this.type === 'pong') this.updatePong();
+        this.effects.forEach((e) => { e.x += e.vx; e.y += e.vy; e.vy += .08; e.life--; });
+        this.effects = this.effects.filter((e) => e.life > 0);
+        $('score').textContent = this.score;
+        this.updateBestLabel();
+        this.updateGameStats();
+      }
+
+      updateFlap() {
+        const s = this.state;
+        s.vy += .43;
+        s.y += s.vy;
+        const speed = 4.1 + Math.min(2.4, this.score * .06);
+        if (this.frame % 84 === 0) s.pipes.push({ x: 960, gap: Math.max(180, 232 - this.score * 1.2), top: 76 + Math.random() * 270, orb: true });
+        if (this.frame % 110 === 0) s.clouds.push({ x: 980, y: 45 + Math.random() * 180, w: 70 + Math.random() * 80 });
+        s.clouds.forEach((cloud) => cloud.x -= speed * .28);
+        s.clouds = s.clouds.filter((cloud) => cloud.x > -180);
+        s.pipes.forEach((p) => p.x -= speed);
+        s.pipes = s.pipes.filter((p) => p.x > -90);
+        s.pipes.forEach((p) => {
+          if (!p.done && p.x + 70 < s.x - s.r) { p.done = true; this.score++; this.pop(s.x, s.y, '#ffcf5a', 10); }
+          const hitTop = this.circleRect(s.x, s.y, s.r, p.x, 0, 70, p.top);
+          const hitBottom = this.circleRect(s.x, s.y, s.r, p.x, p.top + p.gap, 70, 600 - (p.top + p.gap));
+          if (hitTop || hitBottom) this.gameOver();
+          if (p.orb && Math.hypot(s.x - (p.x + 35), s.y - (p.top + p.gap / 2)) < s.r + 14) {
+            p.orb = false;
+            this.score += 3;
+            this.pop(p.x + 35, p.top + p.gap / 2, this.palette.gold, 18);
+          }
+        });
+        if (s.y - s.r < 0 || s.y + s.r > 600) this.gameOver();
+      }
+
+      updateRace() {
+        const s = this.state;
+        const left = this.keys.arrowleft || this.keys.a || this.controls.left;
+        const right = this.keys.arrowright || this.keys.d || this.controls.right;
+        const throttle = this.keys.arrowup || this.keys.w || this.controls.gas;
+        const brake = this.keys.arrowdown || this.keys.s || this.controls.brake;
+        if (throttle) s.speed += .18;
+        else s.speed += (8.0 - s.speed) * .025;
+        if (brake) s.speed -= .38;
+        s.speed = Math.max(2.5, Math.min(s.maxSpeed + Math.min(4, this.score * .025), s.speed));
+        s.gear = Math.max(1, Math.min(6, Math.floor(s.speed / 3) + 1));
+        if (this.pointerX !== null) {
+          s.x += (this.pointerX - s.x) * .2;
+          s.steer = Math.max(-1, Math.min(1, (this.pointerX - 480) / 420));
+        } else {
+          s.steer = (left ? -1 : 0) + (right ? 1 : 0);
+          s.x += s.steer * (5.8 + s.speed * .16);
+        }
+        s.x = Math.max(276, Math.min(684, s.x));
+        s.road += s.speed;
+        s.distance += s.speed * .018;
+        this.score = Math.floor(s.distance);
+        s.invincible = Math.max(0, (s.invincible || 0) - 1);
+        if (this.frame % Math.max(34, 76 - Math.floor(s.speed * 2.4)) === 0) {
+          const lanes = [315, 420, 540, 645];
+          const x = lanes[Math.floor(Math.random() * lanes.length)];
+          if (!s.traffic.some((car) => car.y < 90 && Math.abs(car.x - x) < 70)) {
+            s.traffic.push({ x, y: -90, w: 54, h: 90, color: Math.random() > .55 ? this.palette.red : this.palette.violet });
+          }
+        }
+        if (this.frame % 135 === 0) {
+          const lanes = [315, 420, 540, 645];
+          s.boosts.push({ x: lanes[Math.floor(Math.random() * lanes.length)], y: -40, r: 15 });
+        }
+        s.traffic.forEach((car) => car.y += s.speed * .92 + 2.4);
+        s.boosts.forEach((boost) => boost.y += s.speed * .95 + 2.8);
+        s.traffic = s.traffic.filter((car) => {
+          if (car.y > 690) return false;
+          if (s.invincible <= 0 && this.rectsOverlap(s.x - 31, 478, 62, 96, car.x - car.w / 2, car.y - car.h / 2, car.w, car.h)) {
+            s.damage++;
+            s.speed = Math.max(3, s.speed * .45);
+            s.invincible = 80;
+            this.pop(s.x, 520, this.palette.red, 28);
+            if (s.damage >= 4) this.gameOver();
+            return false;
+          }
+          return true;
+        });
+        s.boosts = s.boosts.filter((boost) => {
+          if (Math.hypot(boost.x - s.x, boost.y - 520) < boost.r + 34) {
+            s.speed = Math.min(s.maxSpeed + 3, s.speed + 3.8);
+            this.score += 5;
+            s.distance += 5;
+            this.pop(boost.x, boost.y, this.palette.gold, 22);
+            return false;
+          }
+          return boost.y < 690;
+        });
+      }
+
+      updateSpace() {
+        const s = this.state;
+        if (this.keys.arrowleft || this.keys.a || this.controls.left) s.x -= 7;
+        if (this.keys.arrowright || this.keys.d || this.controls.right) s.x += 7;
+        if (this.pointerX !== null) s.x += (this.pointerX - s.x) * .22;
+        if (this.keys[' '] || this.pointer || this.controls.gas) this.action();
+        s.x = Math.max(40, Math.min(920, s.x));
+        s.cool--;
+        if (this.frame % 36 === 0) s.rocks.push({ x: 30 + Math.random() * 900, y: -30, r: 18 + Math.random() * 18 });
+        s.bullets.forEach((b) => b.y -= 12);
+        s.rocks.forEach((r) => r.y += 4.4);
+        s.bullets = s.bullets.filter((b) => b.y > -20);
+        s.rocks = s.rocks.filter((r) => {
+          for (const b of s.bullets) {
+            if (Math.hypot(b.x - r.x, b.y - r.y) < r.r + 7) { r.hit = true; b.y = -99; this.score++; this.pop(r.x, r.y, this.palette.violet, 16); }
+          }
+          if (Math.hypot(s.x - r.x, 520 - r.y) < r.r + 24) this.gameOver();
+          return !r.hit && r.y < 650;
+        });
+      }
+
+      updateSnake() {
+        const s = this.state;
+        const opposite = { up: 'down', down: 'up', left: 'right', right: 'left' };
+        if ((this.keys.arrowup || this.keys.w) && s.dir !== 'down') s.next = 'up';
+        if ((this.keys.arrowdown || this.keys.s) && s.dir !== 'up') s.next = 'down';
+        if ((this.keys.arrowleft || this.keys.a) && s.dir !== 'right') s.next = 'left';
+        if ((this.keys.arrowright || this.keys.d) && s.dir !== 'left') s.next = 'right';
+        if (opposite[s.next] === s.dir) s.next = s.dir;
+        if (++s.tick % 8) return;
+        s.dir = s.next;
+        const head = { ...s.snake[0] };
+        if (s.dir === 'up') head.y--;
+        if (s.dir === 'down') head.y++;
+        if (s.dir === 'left') head.x--;
+        if (s.dir === 'right') head.x++;
+        const eatsFood = head.x === s.food.x && head.y === s.food.y;
+        const bodyToCheck = eatsFood ? s.snake : s.snake.slice(0, -1);
+        if (head.x < 0 || head.x >= 30 || head.y < 0 || head.y >= 18 || bodyToCheck.some((p) => p.x === head.x && p.y === head.y)) return this.gameOver();
+        s.snake.unshift(head);
+        if (eatsFood) {
+          this.score++;
+          this.pop(head.x * 32 + 16, head.y * 32 + 16, '#ffcf5a', 12);
+          s.food = this.placeSnakeFood(s.snake);
+        } else s.snake.pop();
+      }
+
+      placeSnakeFood(snake) {
+        for (let attempt = 0; attempt < 300; attempt++) {
+          const food = { x: Math.floor(Math.random() * 30), y: Math.floor(Math.random() * 18) };
+          if (!snake.some((p) => p.x === food.x && p.y === food.y)) return food;
+        }
+        return { x: 17, y: 10 };
+      }
+
+      circleRect(cx, cy, cr, rx, ry, rw, rh) {
+        const closestX = Math.max(rx, Math.min(cx, rx + rw));
+        const closestY = Math.max(ry, Math.min(cy, ry + rh));
+        return Math.hypot(cx - closestX, cy - closestY) <= cr;
+      }
+
+      rectsOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
+        return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+      }
+
+      updateCatch() {
+        const s = this.state;
+        if (this.keys.arrowleft || this.keys.a || this.controls.left) s.x -= 8;
+        if (this.keys.arrowright || this.keys.d || this.controls.right) s.x += 8;
+        if (this.pointerX !== null) s.x += (this.pointerX - s.x) * .2;
+        s.x = Math.max(55, Math.min(905, s.x));
+        if (this.frame % 34 === 0) s.gems.push({ x: 35 + Math.random() * 890, y: -28, r: 14 });
+        if (this.frame % 90 === 0) s.fire.push({ x: 35 + Math.random() * 890, y: -28, r: 18 });
+        s.gems.forEach((g) => g.y += 5.2);
+        s.fire.forEach((f) => f.y += 6.1);
+        s.gems = s.gems.filter((g) => {
+          if (Math.abs(g.x - s.x) < 48 && Math.abs(g.y - 522) < 34) { this.score++; this.pop(g.x, g.y, '#ffcf5a', 12); return false; }
+          return g.y < 640;
+        });
+        s.fire = s.fire.filter((f) => {
+          if (Math.abs(f.x - s.x) < 50 && Math.abs(f.y - 522) < 38) this.gameOver();
+          return f.y < 640;
+        });
+      }
+
+      makeBricks() {
+        const bricks = [];
+        const colors = [this.palette.green, this.palette.gold, this.palette.violet, this.palette.red];
+        for (let row = 0; row < 5; row++) {
+          for (let col = 0; col < 10; col++) {
+            bricks.push({ x: 86 + col * 82, y: 64 + row * 34, w: 68, h: 22, color: colors[(row + col) % colors.length], alive: true });
+          }
+        }
+        return bricks;
+      }
+
+      updateBreaker() {
+        const s = this.state;
+        if (this.keys.arrowleft || this.keys.a || this.controls.left) s.paddleX -= 9;
+        if (this.keys.arrowright || this.keys.d || this.controls.right) s.paddleX += 9;
+        if (this.controls.gas && s.ball.stuck) this.action();
+        if (this.pointerX !== null) s.paddleX += (this.pointerX - s.paddleX) * .28;
+        s.paddleX = Math.max(70, Math.min(890, s.paddleX));
+        const b = s.ball;
+        if (b.stuck) {
+          b.x = s.paddleX;
+          b.y = 486;
+          return;
+        }
+        b.x += b.vx;
+        b.y += b.vy;
+        if (b.x < 16 || b.x > 944) b.vx *= -1;
+        if (b.y < 24) b.vy *= -1;
+        if (b.y > 620) {
+          s.lives--;
+          if (s.lives <= 0) return this.gameOver();
+          Object.assign(b, { x: s.paddleX, y: 486, vx: 0, vy: 0, stuck: true });
+        }
+        if (b.y > 468 && b.y < 506 && Math.abs(b.x - s.paddleX) < 74 && b.vy > 0) {
+          b.vy = -Math.abs(b.vy) - .12;
+          b.vx += (b.x - s.paddleX) * .055;
+          this.pop(b.x, b.y, this.palette.green, 8);
+        }
+        s.bricks.forEach((brick) => {
+          if (!brick.alive) return;
+          if (this.circleRect(b.x, b.y, 10, brick.x, brick.y, brick.w, brick.h)) {
+            brick.alive = false;
+            b.vy *= -1;
+            this.score += 2;
+            this.pop(brick.x + brick.w / 2, brick.y + brick.h / 2, brick.color, 10);
+          }
+        });
+        if (s.bricks.every((brick) => !brick.alive)) {
+          s.level++;
+          s.bricks = this.makeBricks();
+          Object.assign(b, { x: s.paddleX, y: 486, vx: 0, vy: 0, stuck: true });
+          this.score += 10;
+        }
+      }
+
+      updatePong() {
+        const s = this.state;
+        if (this.keys.arrowup || this.keys.w || this.controls.gas) s.playerY -= 8.5;
+        if (this.keys.arrowdown || this.keys.s || this.controls.brake) s.playerY += 8.5;
+        if (this.pointerY !== null) s.playerY += (this.pointerY - s.playerY) * .25;
+        s.playerY = Math.max(70, Math.min(530, s.playerY));
+        s.aiY += (s.ball.y - s.aiY) * .055;
+        s.aiY = Math.max(70, Math.min(530, s.aiY));
+        const b = s.ball;
+        b.x += b.vx;
+        b.y += b.vy;
+        if (b.y < 18 || b.y > 582) b.vy *= -1;
+        if (b.x < 62 && Math.abs(b.y - s.playerY) < 62 && b.vx < 0) {
+          b.vx = Math.abs(b.vx) + .35;
+          b.vy += (b.y - s.playerY) * .045;
+          this.score++;
+          this.pop(72, b.y, this.palette.green, 8);
+        }
+        if (b.x > 898 && Math.abs(b.y - s.aiY) < 62 && b.vx > 0) {
+          b.vx = -Math.abs(b.vx) - .18;
+          b.vy += (b.y - s.aiY) * .035;
+        }
+        if (b.x < -30) {
+          s.ai++;
+          if (s.ai >= 3) return this.gameOver();
+          s.ball = { x: 480, y: 300, vx: 6, vy: 3.5 };
+        }
+        if (b.x > 990) {
+          s.player++;
+          this.score += 5;
+          s.ball = { x: 480, y: 300, vx: -6, vy: -3.5 };
+        }
+      }
+
+      draw() {
+        const c = this.ctx;
+        c.clearRect(0, 0, 960, 600);
+        c.fillStyle = '#071018';
+        c.fillRect(0, 0, 960, 600);
+        if (this.type === 'flap') this.drawFlap(c);
+        if (this.type === 'race') this.drawRace(c);
+        if (this.type === 'space') this.drawSpace(c);
+        if (this.type === 'snake') this.drawSnake(c);
+        if (this.type === 'catch') this.drawCatch(c);
+        if (this.type === 'breaker') this.drawBreaker(c);
+        if (this.type === 'pong') this.drawPong(c);
+        this.drawEffects(c);
+        this.hud(c);
+      }
+
+      drawFlap(c) {
+        const s = this.state;
+        this.sky(c);
+        c.fillStyle = 'rgba(255,255,255,.13)';
+        (s.clouds || []).forEach((cloud) => {
+          c.beginPath();
+          c.ellipse(cloud.x, cloud.y, cloud.w * .42, 18, 0, 0, Math.PI * 2);
+          c.ellipse(cloud.x + cloud.w * .25, cloud.y + 7, cloud.w * .34, 15, 0, 0, Math.PI * 2);
+          c.fill();
+        });
+        s.pipes.forEach((p) => {
+          const grad = c.createLinearGradient(p.x, 0, p.x + 70, 0);
+          grad.addColorStop(0, '#0c4a34');
+          grad.addColorStop(.5, '#35f6a3');
+          grad.addColorStop(1, '#073122');
+          c.fillStyle = grad;
+          c.fillRect(p.x, 0, 70, p.top);
+          c.fillRect(p.x, p.top + p.gap, 70, 600);
+          c.fillStyle = 'rgba(255,207,90,.55)';
+          for (let y = 18; y < 600; y += 46) c.fillRect(p.x, y, 70, 3);
+          c.fillStyle = '#ffd166';
+          c.fillRect(p.x - 6, p.top - 12, 82, 12);
+          c.fillRect(p.x - 6, p.top + p.gap, 82, 12);
+          if (p.orb) {
+            const ox = p.x + 35;
+            const oy = p.top + p.gap / 2;
+            c.shadowColor = '#ffd166';
+            c.shadowBlur = 18;
+            c.beginPath(); c.arc(ox, oy, 12 + Math.sin(this.frame * .12) * 2, 0, Math.PI * 2); c.fill();
+            c.shadowBlur = 0;
+          }
+        });
+        this.dragon(c, s.x, s.y, s.r, s.vy);
+      }
+
+      drawRace(c) {
+        const s = this.state;
+        const bg = c.createLinearGradient(0, 0, 0, 600);
+        bg.addColorStop(0, '#0b1620');
+        bg.addColorStop(.38, '#11261a');
+        bg.addColorStop(1, '#07100c');
+        c.fillStyle = bg;
+        c.fillRect(0, 0, 960, 600);
+        c.fillStyle = '#15191d';
+        c.fillRect(240, 0, 480, 600);
+        c.fillStyle = '#263039';
+        c.fillRect(258, 0, 10, 600);
+        c.fillRect(692, 0, 10, 600);
+        c.strokeStyle = 'rgba(255,255,255,.82)';
+        c.lineWidth = 5;
+        c.setLineDash([36, 30]);
+        [360, 480, 600].forEach((x) => {
+          c.beginPath();
+          c.moveTo(x, -80 + (s.road % 66));
+          c.lineTo(x, 680);
+          c.stroke();
+        });
+        c.setLineDash([]);
+        c.fillStyle = 'rgba(53,246,163,.14)';
+        for (let y = -80 + (s.road * .45 % 96); y < 680; y += 96) {
+          c.fillRect(82, y, 62, 28);
+          c.fillRect(808, y + 35, 62, 28);
+        }
+        s.boosts.forEach((boost) => {
+          c.save();
+          c.shadowColor = this.palette.gold;
+          c.shadowBlur = 16;
+          c.fillStyle = this.palette.gold;
+          c.beginPath();
+          c.moveTo(boost.x, boost.y - boost.r);
+          c.lineTo(boost.x + boost.r, boost.y);
+          c.lineTo(boost.x, boost.y + boost.r);
+          c.lineTo(boost.x - boost.r, boost.y);
+          c.closePath();
+          c.fill();
+          c.restore();
+        });
+        s.traffic.forEach((car) => this.car(c, car.x, car.y, car.color, car.w, car.h));
+        const blink = s.invincible > 0 && Math.floor(this.frame / 5) % 2 === 0;
+        if (!blink) this.car(c, s.x, 528, this.palette.green, 64, 100);
+        c.fillStyle = 'rgba(0,0,0,.66)';
+        c.fillRect(0, 0, 220, 94);
+        c.fillStyle = this.palette.green;
+        c.font = '800 18px system-ui';
+        c.fillText(`${Math.round(s.speed * 16)} km/h`, 18, 31);
+        c.fillText(`Gear ${s.gear}`, 18, 58);
+        c.fillStyle = s.damage >= 3 ? this.palette.red : this.palette.gold;
+        c.fillText(`Damage ${s.damage}/4`, 18, 85);
+      }
+
+      drawSpace(c) {
+        const s = this.state;
+        this.sky(c);
+        c.fillStyle = '#35f6a3';
+        c.shadowColor = '#35f6a3';
+        c.shadowBlur = 12;
+        c.beginPath(); c.moveTo(s.x, 488); c.lineTo(s.x - 28, 540); c.lineTo(s.x + 28, 540); c.closePath(); c.fill();
+        c.shadowBlur = 0;
+        c.fillStyle = '#ffcf5a';
+        s.bullets.forEach((b) => c.fillRect(b.x - 3, b.y - 14, 6, 18));
+        s.rocks.forEach((r) => {
+          c.fillStyle = '#8d99ae';
+          c.beginPath(); c.arc(r.x, r.y, r.r, 0, Math.PI * 2); c.fill();
+          c.strokeStyle = '#8f7cff'; c.stroke();
+        });
+      }
+
+      drawSnake(c) {
+        const s = this.state;
+        const cell = 32;
+        c.fillStyle = '#08120d'; c.fillRect(0, 0, 960, 600);
+        const glow = c.createRadialGradient(480, 300, 80, 480, 300, 520);
+        glow.addColorStop(0, 'rgba(53,246,163,.08)');
+        glow.addColorStop(1, 'rgba(0,0,0,0)');
+        c.fillStyle = glow; c.fillRect(0, 0, 960, 600);
+        c.strokeStyle = 'rgba(255,255,255,.05)';
+        for (let x = 0; x < 30; x++) for (let y = 0; y < 18; y++) c.strokeRect(x * cell, y * cell, cell, cell);
+        const fx = s.food.x * cell + 16;
+        const fy = s.food.y * cell + 16;
+        c.fillStyle = '#ffd166';
+        c.shadowColor = '#ffd166';
+        c.shadowBlur = 16;
+        c.beginPath(); c.arc(fx, fy, 10 + Math.sin(this.frame * .12) * 2, 0, Math.PI * 2); c.fill();
+        c.shadowBlur = 0;
+        s.snake.forEach((p, i) => {
+          const x = p.x * cell + 3;
+          const y = p.y * cell + 3;
+          c.fillStyle = i === 0 ? '#8f7cff' : (i % 2 ? '#35f6a3' : '#19c987');
+          c.shadowColor = i === 0 ? '#8f7cff' : '#35f6a3';
+          c.shadowBlur = i === 0 ? 16 : 8;
+          c.beginPath();
+          c.roundRect ? c.roundRect(x, y, 26, 26, 7) : c.rect(x, y, 26, 26);
+          c.fill();
+          c.shadowBlur = 0;
+          if (i === 0) {
+            c.fillStyle = '#00120b';
+            c.fillRect(p.x * cell + 10, p.y * cell + 10, 4, 4);
+            c.fillRect(p.x * cell + 19, p.y * cell + 10, 4, 4);
+            c.strokeStyle = '#ffd166';
+            c.lineWidth = 2;
+            c.strokeRect(p.x * cell + 2, p.y * cell + 2, 28, 28);
+            c.strokeStyle = '#ffd166';
+            c.beginPath();
+            c.moveTo(p.x * cell + 8, p.y * cell + 2);
+            c.lineTo(p.x * cell + 5, p.y * cell - 5);
+            c.moveTo(p.x * cell + 24, p.y * cell + 2);
+            c.lineTo(p.x * cell + 27, p.y * cell - 5);
+            c.stroke();
+          }
+        });
+      }
+
+      drawCatch(c) {
+        const s = this.state;
+        this.sky(c);
+        c.fillStyle = 'rgba(53,246,163,.16)';
+        c.fillRect(0, 548, 960, 52);
+        c.fillStyle = '#35f6a3';
+        c.beginPath();
+        c.moveTo(s.x - 46, 542);
+        c.lineTo(s.x + 46, 542);
+        c.lineTo(s.x + 28, 576);
+        c.lineTo(s.x - 28, 576);
+        c.closePath();
+        c.fill();
+        c.fillStyle = '#ffcf5a';
+        s.gems.forEach((g) => {
+          c.beginPath();
+          c.moveTo(g.x, g.y - g.r);
+          c.lineTo(g.x + g.r, g.y);
+          c.lineTo(g.x, g.y + g.r);
+          c.lineTo(g.x - g.r, g.y);
+          c.closePath();
+          c.fill();
+        });
+        c.fillStyle = '#ff4f64';
+        s.fire.forEach((f) => {
+          c.beginPath();
+          c.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+          c.fill();
+        });
+      }
+
+      drawBreaker(c) {
+        const s = this.state;
+        const bg = c.createLinearGradient(0, 0, 960, 600);
+        bg.addColorStop(0, '#090822');
+        bg.addColorStop(.55, '#10151a');
+        bg.addColorStop(1, '#06120d');
+        c.fillStyle = bg;
+        c.fillRect(0, 0, 960, 600);
+        c.strokeStyle = 'rgba(255,255,255,.06)';
+        for (let x = 0; x < 960; x += 36) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, 600); c.stroke(); }
+        s.bricks.forEach((brick) => {
+          if (!brick.alive) return;
+          c.shadowColor = brick.color;
+          c.shadowBlur = 12;
+          c.fillStyle = brick.color;
+          c.beginPath();
+          c.roundRect ? c.roundRect(brick.x, brick.y, brick.w, brick.h, 6) : c.rect(brick.x, brick.y, brick.w, brick.h);
+          c.fill();
+          c.shadowBlur = 0;
+          c.fillStyle = 'rgba(255,255,255,.18)';
+          c.fillRect(brick.x + 5, brick.y + 4, brick.w - 10, 3);
+        });
+        c.fillStyle = this.palette.green;
+        c.shadowColor = this.palette.green;
+        c.shadowBlur = 16;
+        c.beginPath();
+        c.roundRect ? c.roundRect(s.paddleX - 72, 504, 144, 18, 9) : c.rect(s.paddleX - 72, 504, 144, 18);
+        c.fill();
+        c.fillStyle = this.palette.gold;
+        c.beginPath(); c.arc(s.ball.x, s.ball.y, 10, 0, Math.PI * 2); c.fill();
+        c.shadowBlur = 0;
+        if (s.ball.stuck) {
+          c.fillStyle = 'rgba(238,247,242,.76)';
+          c.font = '18px system-ui';
+          c.textAlign = 'center';
+          c.fillText('Tap or press Space to launch', 480, 560);
+          c.textAlign = 'left';
+        }
+      }
+
+      drawPong(c) {
+        const s = this.state;
+        c.fillStyle = '#050b0d';
+        c.fillRect(0, 0, 960, 600);
+        c.strokeStyle = 'rgba(53,246,163,.35)';
+        c.lineWidth = 4;
+        c.setLineDash([18, 18]);
+        c.beginPath(); c.moveTo(480, 0); c.lineTo(480, 600); c.stroke();
+        c.setLineDash([]);
+        c.fillStyle = 'rgba(143,124,255,.12)';
+        c.fillRect(0, 0, 480, 600);
+        c.fillStyle = this.palette.green;
+        c.fillRect(46, s.playerY - 58, 18, 116);
+        c.fillStyle = this.palette.violet;
+        c.fillRect(896, s.aiY - 58, 18, 116);
+        c.shadowColor = this.palette.gold;
+        c.shadowBlur = 18;
+        c.fillStyle = this.palette.gold;
+        c.beginPath(); c.arc(s.ball.x, s.ball.y, 13, 0, Math.PI * 2); c.fill();
+        c.shadowBlur = 0;
+        c.fillStyle = '#eef7f2';
+        c.font = '800 44px system-ui';
+        c.textAlign = 'center';
+        c.fillText(`${s.player}  :  ${s.ai}`, 480, 78);
+        c.textAlign = 'left';
+      }
+
+      sky(c) {
+        const bg = c.createLinearGradient(0, 0, 960, 600);
+        bg.addColorStop(0, '#06151f');
+        bg.addColorStop(.5, '#11152b');
+        bg.addColorStop(1, '#06140d');
+        c.fillStyle = bg; c.fillRect(0, 0, 960, 600);
+        c.fillStyle = 'rgba(255,255,255,.55)';
+        for (let i = 0; i < 54; i++) c.fillRect((i * 83 + this.frame * .7) % 960, (i * 47) % 560, 2 + (i % 3 === 0 ? 1 : 0), 2);
+      }
+
+      dragon(c, x, y, r = 24, tilt = 0) {
+        c.save();
+        c.translate(x, y);
+        c.rotate(Math.max(-.45, Math.min(.45, tilt * .035)));
+        c.shadowColor = this.palette.green;
+        c.shadowBlur = 18;
+        c.fillStyle = this.palette.gold;
+        c.beginPath();
+        c.ellipse(-25, 4, 25, 10 + Math.sin(this.frame * .32) * 5, -.45, 0, Math.PI * 2);
+        c.ellipse(18, 5, 24, 10 + Math.cos(this.frame * .32) * 5, .45, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = this.palette.green;
+        c.beginPath(); c.ellipse(0, 0, r + 8, r, 0, 0, Math.PI * 2); c.fill();
+        c.fillStyle = '#061016';
+        c.beginPath(); c.arc(9, -6, 4, 0, Math.PI * 2); c.fill();
+        c.strokeStyle = this.palette.violet;
+        c.lineWidth = 4;
+        c.beginPath(); c.moveTo(-18, -16); c.lineTo(-30, -29); c.moveTo(8, -17); c.lineTo(15, -31); c.stroke();
+        c.strokeStyle = this.palette.gold;
+        c.lineWidth = 3;
+        c.beginPath(); c.moveTo(-28, 2); c.quadraticCurveTo(-45, 8, -54, 0); c.stroke();
+        c.shadowBlur = 0;
+        c.restore();
+      }
+
+      car(c, x, y, color, w = 56, h = 86) {
+        c.shadowColor = color;
+        c.shadowBlur = 12;
+        c.fillStyle = color;
+        c.beginPath();
+        c.roundRect ? c.roundRect(x - w / 2, y - h / 2, w, h, 9) : c.rect(x - w / 2, y - h / 2, w, h);
+        c.fill();
+        c.shadowBlur = 0;
+        c.fillStyle = 'rgba(0,0,0,.32)';
+        c.fillRect(x - w * .34, y - h * .32, w * .68, h * .20);
+        c.fillRect(x - w * .34, y + h * .10, w * .68, h * .25);
+        c.fillStyle = '#ffd166';
+        c.fillRect(x - w * .42, y - h * .48, w * .22, h * .06);
+        c.fillRect(x + w * .20, y - h * .48, w * .22, h * .06);
+      }
+
+      pop(x, y, color = '#35f6a3', count = 10) {
+        for (let i = 0; i < count; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const speed = 1.5 + Math.random() * 4;
+          this.effects.push({ x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, life: 22 + Math.random() * 18, color });
+        }
+      }
+
+      drawEffects(c) {
+        this.effects.forEach((e) => {
+          c.globalAlpha = Math.max(0, e.life / 36);
+          c.fillStyle = e.color;
+          c.beginPath();
+          c.arc(e.x, e.y, 3 + e.life / 14, 0, Math.PI * 2);
+          c.fill();
+        });
+        c.globalAlpha = 1;
+      }
+
+      hud(c) {
+        c.fillStyle = 'rgba(0,0,0,.32)';
+        c.fillRect(16, 14, 230, 42);
+        c.fillStyle = '#35f6a3';
+        c.font = '800 18px system-ui';
+        c.fillText(`${this.type.toUpperCase()}  ${this.score}  BEST ${this.bestScore()}`, 28, 41);
+      }
+
+      gameOver() {
+        this.running = false;
+        this.bestByType[this.type] = Math.max(this.bestScore(), this.score);
+        localStorage.setItem('blackDragonGameBestByType', JSON.stringify(this.bestByType));
+        this.updateBestLabel();
+        const c = this.ctx;
+        c.fillStyle = 'rgba(0,0,0,.55)';
+        c.fillRect(0, 0, 960, 600);
+        c.fillStyle = '#35f6a3';
+        c.font = '700 52px system-ui';
+        c.textAlign = 'center';
+        c.fillText('Game Over', 480, 280);
+        c.font = '24px system-ui';
+        c.fillStyle = '#ffcf5a';
+        c.fillText(`Score ${this.score}  |  Best ${this.bestScore()}`, 480, 325);
+        c.fillStyle = '#eef7f2';
+        c.fillText('Click restart or press a game button', 480, 362);
+        c.textAlign = 'left';
+      }
+
+      bestScore() {
+        return Number(this.bestByType?.[this.type] || 0);
+      }
+
+      updateBestLabel() {
+        if ($('gameBest')) $('gameBest').textContent = 'Best: ' + this.bestScore();
+      }
+
+      updateGameStats() {
+        const box = $('gameStats');
+        if (!box || !this.state) return;
+        const s = this.state;
+        const stats = [];
+        if (this.type === 'race') {
+          stats.push(['Speed', `${Math.round((s.speed || 0) * 16)} km/h`], ['Gear', `G${s.gear || 1}`], ['Damage', `${s.damage || 0}/4`], ['Traffic', s.traffic?.length || 0]);
+        } else if (this.type === 'breaker') {
+          stats.push(['Lives', s.lives], ['Level', s.level], ['Crystals', (s.bricks || []).filter((b) => b.alive).length], ['Ball', s.ball?.stuck ? 'Ready' : 'Live']);
+        } else if (this.type === 'pong') {
+          stats.push(['You', s.player], ['Auto', s.ai], ['Ball', `${Math.abs(Math.round(s.ball?.vx || 0))}`], ['Goal', '3 points']);
+        } else if (this.type === 'snake') {
+          stats.push(['Length', s.snake?.length || 0], ['Direction', s.dir], ['Food', `${s.food?.x || 0},${s.food?.y || 0}`], ['Grid', '30 x 18']);
+        } else if (this.type === 'space') {
+          stats.push(['Bullets', s.bullets?.length || 0], ['Rocks', s.rocks?.length || 0], ['Charge', Math.max(0, s.cool || 0)], ['Mode', 'Shooter']);
+        } else if (this.type === 'catch') {
+          stats.push(['Gems', s.gems?.length || 0], ['Fire', s.fire?.length || 0], ['Shield', s.shield || 0], ['Mode', 'Catch']);
+        } else {
+          stats.push(['Pipes', s.pipes?.length || 0], ['Height', Math.round(s.y || 0)], ['Velocity', Math.round((s.vy || 0) * 10) / 10], ['Mode', 'Flap']);
+        }
+        box.innerHTML = stats.map(([label, value]) => `<div class="game-stat"><span>${label}</span><strong>${value}</strong></div>`).join('');
+      }
+    }
+
+    const ai = new BlackDragonAI();
+    const games = new DragonGames();
+    const airDraw = new AirDraw3D();
+    const notes = new NotesPad();
+    window.ai = ai;
+    window.games = games;
+    window.airDraw = airDraw;
+    window.notes = notes;
+  </script>
+</body>
+</html>
